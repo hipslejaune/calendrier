@@ -168,8 +168,8 @@
     " vec3 c=textureGrad(uBg,uv,dX,dY).rgb;\n" +
     " if(uLmOn>.5){vec2 lp=vec2(px.x-uLr.x,px.y-uLr.y)/uLr.zw;\n" +
     "  if(lp.x>=0.&&lp.x<=1.&&lp.y>=0.&&lp.y<=1.){vec4 s=texture(uLm,lp);float ph=s.g*255.;\n" +
-    "   float tw=.5+.5*sin(uT*(9.+hsh(ph)*9.)+ph*3.7);tw=smoothstep(.2,.95,tw);\n" +
-    "   c*=mix(1.,mix(.55,1.6,tw),s.r);c+=vec3(1.,.8,.45)*s.r*tw*tw*.22;}}\n" +
+    "   float tw=.5+.5*sin(uT*(1.6+hsh(ph)*2.2)+ph*3.7);tw=smoothstep(.2,.95,tw);\n" +
+    "   c*=mix(1.,mix(.4,1.5,tw),s.r);c+=vec3(1.,.8,.45)*s.r*tw*tw*.22;}}\n" +
     " c+=vec3(1.,.58,.2)*glow;\n" +
     " for(int t=0;t<2;t++){vec4 T=uTr[t];\n" +
     "  c+=guirlande(px,T,float(t)*101.);\n" +
