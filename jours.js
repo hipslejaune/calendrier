@@ -15,7 +15,7 @@ window.CALENDRIER = {
       // vue au départ (radians) et limites ; champ de vision vertical (degrés)
       vue: { yaw: 0, pitch: 0, pitchMin: -0.87, pitchMax: 0.75, fovPortrait: 88, fovPaysage: 80 },
       // chalet posé sur le meuble : u = colonne (pixels du décor), vBase = ligne du bas du chalet, larg = largeur angulaire (degrés)
-      chalet: { u: 0, vBase: 960, larg: 44 },
+      chalet: { u: 0, vBase: 1030, larg: 50 },
       // calque de neige : rectangle du décor couvert (u0 + largeur, avec raccord par le bord), v0 + hauteur
       region: { U0: 2000, V0: 560, RW: 1712, RH: 520 },
       // zones où la neige se dépose : polygones en (colonne - U0, ligne). chalet:true = le chalet masque le dessus
