@@ -224,17 +224,19 @@
     musique = new Audio(piste);
     musique.loop = true; musique.volume = .16; musique.preload = "auto";
   }
+  var demarre = false;
   function jouerMusique() {
     if (!musique || muet || document.hidden) return;
-    var p = musique.play(); if (p && p.catch) p.catch(function () {});
+    var p = musique.play();
+    if (p && p.then) p.then(function () { demarre = true; }, function () {});
   }
-  var demarre = false;
-  function premierGeste() {
-    if (demarre) return; demarre = true;
+  function premierGeste() {                                   // si le navigateur a refusé le départ automatique, le 1er geste lance la musique
+    if (demarre) return;
     contexte(); jouerMusique();
   }
-  window.addEventListener("pointerdown", premierGeste, { passive: true });
-  window.addEventListener("keydown", premierGeste);
+  ["pointerdown", "touchend", "click", "keydown"].forEach(function (t) { window.addEventListener(t, premierGeste, { passive: true }); });
+  jouerMusique();                                             // départ automatique dès le chargement (accepté selon le navigateur)
+  setTimeout(jouerMusique, 600);
   document.addEventListener("visibilitychange", function () {
     if (!musique) return;
     if (document.hidden) musique.pause(); else if (demarre) jouerMusique();
