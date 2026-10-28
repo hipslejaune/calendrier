@@ -30,6 +30,14 @@ window.CALENDRIER = {
         { nom: "sapin-droit", budget: 1.1, rx: 1.3, ry: 1.1, a: [0.55, 0.85],
           pts: [[1250,598],[1260,630],[1270,650],[1284,680],[1300,705],[1307,730],[1310,760],[1292,785],[1270,798],[1212,798],[1202,770],[1195,745],[1204,720],[1222,690],[1237,660],[1244,630],[1248,605]] }
       ],
+      // petits sapins des pots : guirlandes scintillantes + étoile (u, haut, bas, demi-largeur en pixels du décor)
+      sapins: [
+        { u: 2510, haut: 592, bas: 800, demi: 60, etoile: { R: 12, n: 5, rat: 0.46, coul: [1.0, 0.78, 0.28] } },     // à gauche : étoile dorée à 5 branches
+        { u: 340,  haut: 614, bas: 800, demi: 50, etoile: { R: 13, n: 8, rat: 0.5,  coul: [0.88, 0.93, 1.0] } }     // à droite : étoile argentée à 8 branches
+      ],
+      // lumières déjà présentes dans la photo qui scintillent : grand sapin (axe u, haut v, bas v, demi-largeur max), guirlande de la cheminée
+      // (rectangle u0, v0, u1, v1) et zone exclue (la fenêtre voisine du sapin)
+      scintillements: { arbre: [1130, 560, 900, 140], guirlande: [1320, 625, 1710, 750], exclu: [1196, 500, 1330, 770] },
       // flammes qui vacillent : [u, v, demi-largeur, demi-hauteur] en pixels du décor
       flammes: [
         [1520, 822, 62, 42],                                   // feu de cheminée

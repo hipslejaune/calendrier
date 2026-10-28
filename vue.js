@@ -117,6 +117,37 @@
   var FS = "#version 300 es\nprecision highp float;\n" +
     "uniform sampler2D uBg;uniform sampler2D uSnow;uniform vec3 uF,uR,uU;uniform vec2 uRes,uTex;uniform float uFoc,uT,uFlN;\n" +
     "uniform vec4 uFl[16];uniform vec4 uReg;uniform float uSnowOn;out vec4 o;const float PI=3.14159265;\n" +
+    "uniform vec4 uTr[2];uniform vec4 uSt[2];uniform vec3 uSc[2];uniform vec4 uAr,uGu,uEx;\n" +
+    "float hsh(float n){return fract(sin(n*91.345+17.1)*43758.5453);}\n" +
+    "vec3 pal(float h){int i=int(floor(h*6.));\n" +
+    " if(i==0)return vec3(1.,.12,.1);if(i==1)return vec3(1.,.6,.14);if(i==2)return vec3(.25,1.,.35);\n" +
+    " if(i==3)return vec3(.25,.5,1.);if(i==4)return vec3(1.,.25,.7);return vec3(1.,.88,.62);}\n" +
+    "vec3 guirlande(vec2 q,vec4 T,float seed){vec3 acc=vec3(0.);\n" +
+    " float dx=q.x-T.x;dx-=uTex.x*floor(dx/uTex.x+.5);\n" +
+    " if(abs(dx)>T.w*1.3||q.y<T.y-8.||q.y>T.z+8.)return acc;\n" +
+    " for(int r=0;r<7;r++){float tr=.17+float(r)*.125;float vr=T.y+tr*(T.z-T.y-20.);\n" +
+    "  float hw=T.w*(1.-pow(1.-tr,2.2))*.9;float nB=3.+floor(hw/10.);\n" +
+    "  for(int k=0;k<9;k++){if(float(k)>=nB)break;\n" +
+    "   float id=float(r)*17.+float(k)*3.+seed;\n" +
+    "   float ph=PI*clamp((float(k)+.5+.35*sin(float(r)*2.1))/nB,.05,.95);\n" +
+    "   vec2 b=vec2(-hw*cos(ph)+(hsh(id+5.)-.5)*3.,vr+.2*hw*sin(ph)+(hsh(id+6.)-.5)*3.);\n" +
+    "   vec2 dd=vec2(dx,q.y)-vec2(0.,0.)-b-vec2(0.,0.);dd.y=q.y-(b.y);\n" +
+    "   float d2=dd.x*dd.x+dd.y*dd.y;if(d2>200.)continue;\n" +
+    "   float tw=.5+.5*sin(uT*(1.3+hsh(id)*2.7)+hsh(id+1.)*40.);tw=tw*tw;\n" +
+    "   vec3 col=pal(hsh(id+2.));\n" +
+    "   float core=exp(-d2/4.5);float glow=exp(-d2/60.);\n" +
+    "   float cr=(exp(-abs(dd.x)*.8-dd.y*dd.y*.9)+exp(-abs(dd.y)*.8-dd.x*dd.x*.9))*tw*tw;\n" +
+    "   acc+=col*(core*1.3+glow*.5)*(.3+.9*tw)+vec3(1.,.97,.9)*(core*.55*tw+cr*.35);}}\n" +
+    " return acc;}\n" +
+    "vec4 etoile(vec2 dd,float R,float n,float rat,vec3 base){\n" +
+    " vec2 p=vec2(dd.x,-dd.y);float d=length(p);float s=PI/n;float ang=atan(p.x,p.y);\n" +
+    " float raw=mod(ang+s,2.*s)-s;float a=abs(raw);\n" +
+    " vec2 P1=vec2(R,0.),P2=R*rat*vec2(cos(s),sin(s)),e=P2-P1,dr=vec2(cos(a),sin(a));\n" +
+    " float t=(P1.x*e.y-P1.y*e.x)/(dr.x*e.y-dr.y*e.x);\n" +
+    " float cov=1.-smoothstep(t-.8,t+.5,d);\n" +
+    " float fac=raw>0.?1.14:.78;float grad=.78+.3*(p.y/R);float rim=smoothstep(t-2.4,t,d);\n" +
+    " vec3 col=base*fac*grad+base*.22*rim+vec3(1.,.96,.82)*pow(max(0.,1.-d/(R*.5)),3.)*.3;\n" +
+    " return vec4(col,cov);}\n" +
     "void main(){\n" +
     " vec2 p=gl_FragCoord.xy-.5*uRes;\n" +
     " vec3 d=normalize(uF+(p.x/uFoc)*uR+(p.y/uFoc)*uU);\n" +
@@ -135,7 +166,21 @@
     "  glow+=m*m*(.16+.08*sin(uT*6.3+f.x)+.05*sin(uT*13.1+f.x*2.));}\n" +
     " vec2 uv=vec2((px.x+sh.x)/uTex.x,(px.y+sh.y)/uTex.y);\n" +
     " vec3 c=textureGrad(uBg,uv,dX,dY).rgb;\n" +
+    " {bool zone=false;float zid=0.;\n" +
+    "  float ta=(px.y-uAr.y)/(uAr.z-uAr.y);\n" +
+    "  if(ta>0.&&ta<1.&&abs(px.x-uAr.x)<uAr.w*(1.-pow(1.-ta,1.6))+4.&&!(px.x>uEx.x&&px.x<uEx.z&&px.y>uEx.y&&px.y<uEx.w)){zone=true;zid=1.;}\n" +
+    "  if(px.x>uGu.x&&px.x<uGu.z&&px.y>uGu.y&&px.y<uGu.w){zone=true;zid=2.;}\n" +
+    "  if(zone){float mx=max(c.r,max(c.g,c.b));float m=smoothstep(.6,.88,mx);\n" +
+    "   vec2 cell=floor(px/4.);float id=hsh(cell.x*3.7+cell.y*11.9+zid*5.);\n" +
+    "   float tw=.5+.5*sin(uT*(6.+id*8.)+id*60.);tw=smoothstep(.1,.95,tw);\n" +
+    "   c*=mix(1.,mix(.35,1.6,tw),m);c+=vec3(1.,.82,.5)*m*tw*tw*.1;}}\n" +
     " c+=vec3(1.,.58,.2)*glow;\n" +
+    " for(int t=0;t<2;t++){vec4 T=uTr[t];\n" +
+    "  c+=guirlande(px,T,float(t)*101.);\n" +
+    "  vec4 S=uSt[t];float cy=T.y-S.x*.38;float dx=px.x-T.x;dx-=uTex.x*floor(dx/uTex.x+.5);vec2 dd=vec2(dx,px.y-cy);\n" +
+    "  if(length(dd)<S.x*4.){float tw=.9+.1*sin(uT*2.3+float(t)*2.);\n" +
+    "   c+=uSc[t]*exp(-length(dd)/(S.x*.9))*.22*tw;\n" +
+    "   vec4 st=etoile(dd,S.x,S.y,S.z,uSc[t]*tw);c=mix(c,st.rgb,st.a);}}\n" +
     " if(uSnowOn>.5){vec2 rp=vec2(mod(px.x-uReg.x,uTex.x),px.y-uReg.y)/uReg.zw;\n" +
     "  if(rp.x>=0.&&rp.x<=1.&&rp.y>=0.&&rp.y<=1.){vec4 s=texture(uSnow,rp);c=c*(1.-s.a)+s.rgb*vec3(1.,.97,.93);}}\n" +
     " o=vec4(c,1.);}";
@@ -160,12 +205,19 @@
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
     gl.useProgram(prog);
-    ["uBg", "uSnow", "uF", "uR", "uU", "uRes", "uTex", "uFoc", "uT", "uFlN", "uFl", "uReg", "uSnowOn"].forEach(function (n) { loc[n] = gl.getUniformLocation(prog, n); });
+    ["uBg", "uSnow", "uF", "uR", "uU", "uRes", "uTex", "uFoc", "uT", "uFlN", "uFl", "uReg", "uSnowOn", "uTr", "uSt", "uSc", "uAr", "uGu", "uEx"].forEach(function (n) { loc[n] = gl.getUniformLocation(prog, n); });
     gl.uniform1i(loc.uBg, 0); gl.uniform1i(loc.uSnow, 1);
     gl.uniform2f(loc.uTex, D.w, D.h);
     var fl = D.flammes || [], arr = new Float32Array(64);
     fl.slice(0, 16).forEach(function (q, i) { arr[i * 4] = q[0]; arr[i * 4 + 1] = q[1]; arr[i * 4 + 2] = q[2]; arr[i * 4 + 3] = q[3]; });
     gl.uniform4fv(loc.uFl, arr); gl.uniform1f(loc.uFlN, Math.min(16, fl.length));
+    var sp = D.sapins || [], tr = new Float32Array(8), st = new Float32Array(8), sc = new Float32Array(6);
+    sp.slice(0, 2).forEach(function (q, i) {
+      tr.set([q.u, q.haut, q.bas, q.demi], i * 4); st.set([q.etoile.R, q.etoile.n, q.etoile.rat, 0], i * 4); sc.set(q.etoile.coul, i * 3);
+    });
+    gl.uniform4fv(loc.uTr, tr); gl.uniform4fv(loc.uSt, st); gl.uniform3fv(loc.uSc, sc);
+    var sc2 = D.scintillements || { arbre: [0, 0, 1, 0], guirlande: [0, 0, 0, 0], exclu: [0, 0, 0, 0] };
+    gl.uniform4fv(loc.uAr, sc2.arbre); gl.uniform4fv(loc.uGu, sc2.guirlande); gl.uniform4fv(loc.uEx, sc2.exclu);
     gl.uniform4f(loc.uReg, D.region.U0, D.region.V0, D.region.RW, D.region.RH);
     gl.activeTexture(gl.TEXTURE1); texSnow = tex(null, false);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));

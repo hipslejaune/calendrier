@@ -130,7 +130,8 @@
       b.style.cssText = "left:" + (x * 100).toFixed(3) + "%;top:" + (y * 100).toFixed(3) + "%;width:" +
                         (w * 100).toFixed(3) + "%;height:" + (h * 100).toFixed(3) + "%;--rad:" + rad;
 
-      var html = '<span class="interieur"' + (decorDe[n] ? ' style="--img:url(' + decorDe[n] + ');' + (decorPos[n] || "") + '"' : "") + '></span><span class="halo"></span>';
+      var fs = Math.min(bx[2] * 0.7, bx[3] / RATIO * 0.5) * 100;        // taille du chiffre « revu » au survol (en % de la largeur du chalet)
+      var html = '<span class="interieur"' + (decorDe[n] ? ' style="--img:url(' + decorDe[n] + ');' + (decorPos[n] || "") + '"' : "") + '></span><span class="halo"></span>' + (n === CHEMINEE ? "" : '<span class="revoir" style="font-size:' + fs.toFixed(2) + 'cqw">' + n + '</span>');
       if (n === CHEMINEE) {
         html += '<span class="fumee"><i></i><i></i><i></i></span><span class="chiffre">3</span>';
       } else if (FENETRES_DOUBLES.indexOf(n) >= 0) {
@@ -480,7 +481,12 @@
     if (ouv.length < 1) return;
     var a = ouv[Math.floor(Math.random() * ouv.length)];
     var W = lutins.offsetWidth, H = lutins.offsetHeight; if (!W || !H) return;
-    var ba = CH.boxes[a];
+    var ba = CH.boxes[a], groupe = [a];
+    if (IMG_COMMUNE.cases.indexOf(a) >= 0) {                  // 13 et 14 ne forment qu'une image : le lutin peut passer de l'une à l'autre
+      groupe = IMG_COMMUNE.cases.filter(function (n) { return ouv.indexOf(n) >= 0; });
+      var x0 = Math.min.apply(null, groupe.map(function (n) { return CH.boxes[n][0]; })), x1 = Math.max.apply(null, groupe.map(function (n) { return CH.boxes[n][0] + CH.boxes[n][2]; }));
+      ba = [x0, CH.boxes[a][1], x1 - x0, CH.boxes[a][3]];
+    }
     var fa = (ba[1] + ba[3] * 1.13) * H;                       // « sol » légèrement sous la fenêtre : on ne voit pas leurs pieds
     var xa = (ba[0] + ba[2] / 2) * W;
     var hauteur = Math.max(0.07 * W, Math.min(0.14 * W, ba[3] * H * 0.92));
@@ -534,7 +540,7 @@
     }
     el.style.filter = "brightness(" + eclat.toFixed(2) + ")";
     var cadre = document.createElement("div");                // le cadre découpe le lutin à sa fenêtre
-    cadre.className = "cadre-lutin"; cadre.dataset.n = a; cadre.style.clipPath = 'path("' + cheminFenetre(a, W, H) + '")';
+    cadre.className = "cadre-lutin"; cadre.dataset.n = a; cadre.style.clipPath = 'path("' + groupe.map(function (n) { return cheminFenetre(n, W, H); }).join("") + '")';
     cadre.appendChild(el); lutins.appendChild(cadre); nLutins++;
     var kf = [], cum = 0, tPause0 = 0, tPause1 = 0;
     function pos(p, off) { return { transform: "translate(" + p[0].toFixed(1) + "px," + p[1].toFixed(1) + "px)", offset: Math.min(1, off) }; }
