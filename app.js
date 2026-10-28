@@ -102,6 +102,11 @@
     if (ac && ac.state === "suspended") ac.resume();
     return ac;
   }
+  var comp = null;
+  function maitre(c) {                                   // limiteur : le grincement peut être fort sans saturer
+    if (!comp) { comp = c.createDynamicsCompressor(); comp.threshold.value = -10; comp.ratio.value = 8; comp.connect(c.destination); }
+    return comp;
+  }
   function grincement() {
     if (muet) return;
     var c = contexte(); if (!c) return;
@@ -126,11 +131,11 @@
 
     var env = c.createGain();
     env.gain.setValueAtTime(0, t);
-    env.gain.linearRampToValueAtTime(.3, t + .08);
-    env.gain.setValueAtTime(.3, t + dur - .25);
+    env.gain.linearRampToValueAtTime(1.1, t + .08);
+    env.gain.setValueAtTime(1.1, t + dur - .25);
     env.gain.linearRampToValueAtTime(0, t + dur);
 
-    osc.connect(am); am.connect(bp); bp.connect(env); env.connect(c.destination);
+    osc.connect(am); am.connect(bp); bp.connect(env); env.connect(maitre(c));
     [osc, vib, lfo].forEach(function (o) { o.start(t); o.stop(t + dur + .05); });
 
     // petit « toc » du bois en fin de course
@@ -138,8 +143,8 @@
     for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
     var src = c.createBufferSource(); src.buffer = n;
     var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 700;
-    var g2 = c.createGain(); g2.gain.value = .35;
-    src.connect(lp); lp.connect(g2); g2.connect(c.destination); src.start(t + dur - .02);
+    var g2 = c.createGain(); g2.gain.value = .9;
+    src.connect(lp); lp.connect(g2); g2.connect(maitre(c)); src.start(t + dur - .02);
   }
 
   // Musique du jour : tirée au hasard (reproductible) dans la liste, jamais la même deux jours de suite.
@@ -158,7 +163,7 @@
   var piste = musiqueDuJour(jourRef), musique = null;
   if (piste) {
     musique = new Audio(piste);
-    musique.loop = true; musique.volume = .2; musique.preload = "auto";
+    musique.loop = true; musique.volume = .1; musique.preload = "auto";
   }
   function jouerMusique() {
     if (!musique || muet || document.hidden) return;
