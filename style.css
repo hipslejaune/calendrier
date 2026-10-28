@@ -25,9 +25,10 @@ img{-webkit-user-drag:none;user-drag:none}
   }
 }
 #fond{position:absolute;inset:0;background:var(--nuit) var(--img-d) center/100% 100% no-repeat}
+/* Portrait : on garde l'image du PC, plus large que l'écran. Le téléphone pivote = panoramique (voir app.js) */
 @media (orientation:portrait){
-  #stage{--ar:.5625}
-  #fond{background-image:var(--img-m)}
+  #stage{--ar:1.7778;left:0;top:0;width:calc(100vh*var(--ar));height:100vh;transform:translate3d(var(--tx,0px),0,0)}
+  @supports (height:100dvh){#stage{width:calc(100dvh*var(--ar));height:100dvh}}
 }
 
 #flammes{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -50,10 +51,10 @@ img{-webkit-user-drag:none;user-drag:none}
 /* Paysage : sur la partie droite du meuble */
 #chalet{--cx:56;--by:72;--cw:min(30cqw,54vh)}
 /* Portrait : centré sur le meuble */
-@media (orientation:portrait){#chalet{--cx:54;--by:72;--cw:min(94vw,60vh)}}
+@media (orientation:portrait){#chalet{--cx:56;--by:72;--cw:min(30cqw,96vw)}}
 @supports (height:100dvh){
   #chalet{--cw:min(30cqw,54dvh)}
-  @media (orientation:portrait){#chalet{--cw:min(94vw,60dvh)}}
+  @media (orientation:portrait){#chalet{--cw:min(30cqw,96vw)}}
 }
 #chalet-img{
   position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;
@@ -221,4 +222,20 @@ img{-webkit-user-drag:none;user-drag:none}
   .vantail{transition-duration:.01s}
   .porte.ouverte .halo{animation:none;opacity:.28;transform:translate(-50%,-50%) scale(.55)}
   .porte.aujourdhui:not(.ouverte)::after,.carte-boite,.porte.refus,.cheminee.ouverte .fumee i{animation:none}
+}
+
+/* Bouton panorama (portrait uniquement) */
+#pano{display:none}
+@media (orientation:portrait){
+  #pano{
+    position:fixed;left:max(.8rem,env(safe-area-inset-left));bottom:max(.8rem,env(safe-area-inset-bottom));z-index:20;
+    display:grid;place-items:center;width:2.6rem;height:2.6rem;border-radius:50%;cursor:pointer;padding:0;
+    color:#fff3cf;background:rgba(14,22,48,.72);border:1px solid rgba(233,196,106,.55);
+  }
+  #pano svg{width:1.4rem;height:1.4rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  #pano.actif{background:rgba(233,196,106,.28)}
+}
+@media (orientation:portrait){
+  #neige{inset:auto;left:0;top:0;width:calc(100vh*1.7778);height:100vh;transform:translate3d(var(--tx,0px),0,0)}
+  @supports (height:100dvh){#neige{width:calc(100dvh*1.7778);height:100dvh}}
 }

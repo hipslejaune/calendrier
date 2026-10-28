@@ -370,6 +370,80 @@
     setTimeout(function () { occupe = false; afficherCarte(n); }, 1300);
   });
 
+  /* ---------- Panorama (portrait) : le fond est l'image du PC, plus large que l'écran ----------
+     On pivote le téléphone à gauche / à droite (gyroscope) ou on glisse le doigt pour voir le reste de la pièce. */
+  var racine = document.documentElement, scene = document.getElementById("stage"), boutonPano = document.getElementById("pano");
+  var pano = { tx: 0, cible: 0, base: 0, decal: 0, ref: null, k: 12, min: 0, vivant: false, gyro: false, glisse: 0 };
+  var portraitMQ = window.matchMedia("(orientation: portrait)");
+  function geoPano() {
+    if (!portraitMQ.matches) { racine.style.setProperty("--tx", "0px"); return; }
+    var sw = scene.offsetWidth, vw = window.innerWidth;
+    pano.min = Math.min(0, vw - sw);
+    pano.base = Math.max(pano.min, Math.min(0, vw / 2 - sw * 0.56));       // départ : le chalet au centre
+    pano.k = Math.max(6, sw / 90);                                          // pixels par degré
+    pano.ref = null; pano.decal = 0; pano.cible = pano.tx = pano.base;
+    racine.style.setProperty("--tx", pano.tx.toFixed(1) + "px");
+    if (!pano.vivant) { pano.vivant = true; requestAnimationFrame(imagePano); }
+  }
+  function borner(v) { return Math.max(pano.min, Math.min(0, v)); }
+  function imagePano() {
+    if (portraitMQ.matches) {
+      pano.cible = borner(pano.cible);
+      var d = pano.cible - pano.tx;
+      if (Math.abs(d) > 0.2) { pano.tx += d * 0.14; racine.style.setProperty("--tx", pano.tx.toFixed(1) + "px"); }
+    }
+    requestAnimationFrame(imagePano);
+  }
+  function surOrientation(e) {
+    if (!portraitMQ.matches || e.alpha == null) return;
+    if (!pano.gyro) { pano.gyro = true; boutonPano.classList.add("actif"); }
+    if (pano.ref == null) pano.ref = e.alpha;
+    var delta = ((e.alpha - pano.ref + 540) % 360) - 180;                   // > 0 : le téléphone tourne vers la gauche
+    pano.cible = borner(pano.base + pano.decal + delta * pano.k);
+  }
+  var essaisGyro = 0, gyroRefuse = false;
+  function activerGyro(geste) {
+    window.addEventListener("deviceorientation", surOrientation);           // Android : pas de permission à demander
+    var DOE = window.DeviceOrientationEvent;
+    if (geste && !pano.gyro && !gyroRefuse && essaisGyro < 3 && DOE && typeof DOE.requestPermission === "function") {
+      essaisGyro++;                                                         // iOS : la permission se demande sur un geste
+      DOE.requestPermission().then(function (r) {
+        if (r === "granted") { window.addEventListener("deviceorientation", surOrientation); if (geste === "bouton") message("Tourne ton téléphone pour explorer la pièce"); }
+        else { gyroRefuse = true; message("Panorama refusé : glisse le doigt sur l'image"); }
+      }).catch(function () {});
+    }
+  }
+  boutonPano.addEventListener("click", function () {
+    if (pano.gyro) { pano.ref = null; pano.decal = 0; pano.cible = pano.base; message("Panorama recentré"); }
+    else activerGyro("bouton");
+  });
+  document.addEventListener("click", function () { if (portraitMQ.matches) activerGyro(true); });
+  // glisser le doigt : alternative au gyroscope (ordinateur, refus de permission)
+  var glisse = null;
+  window.addEventListener("pointerdown", function (e) {
+    if (!portraitMQ.matches || (e.target.closest && e.target.closest("#carte,#son,#fermer,#pano"))) return;
+    glisse = { x: e.clientX, tx: pano.cible, actif: false };
+  }, { passive: true });
+  window.addEventListener("pointermove", function (e) {
+    if (!glisse) return;
+    var dx = e.clientX - glisse.x;
+    if (!glisse.actif && Math.abs(dx) > 10) glisse.actif = true;
+    if (glisse.actif) { pano.cible = borner(glisse.tx + dx); pano.decal = pano.cible - pano.base - (pano.gyro && pano.ref != null ? 0 : 0); pano.glisse = Date.now(); }
+  }, { passive: true });
+  function finGlisse() { if (glisse && glisse.actif && pano.gyro) { pano.ref = null; pano.decal = pano.cible - pano.base; } glisse = null; }
+  window.addEventListener("pointerup", finGlisse, { passive: true });
+  window.addEventListener("pointercancel", finGlisse, { passive: true });
+  document.addEventListener("click", function (e) {                          // un glissement n'ouvre pas une porte
+    if (Date.now() - pano.glisse < 350) { e.stopPropagation(); e.preventDefault(); }
+  }, true);
+  window.addEventListener("resize", geoPano);
+  if (portraitMQ.addEventListener) portraitMQ.addEventListener("change", geoPano);
+  window.addEventListener("load", function () {
+    geoPano();
+    if (portraitMQ.matches) { activerGyro(false); setTimeout(function () { message("Tourne ton téléphone (ou glisse) pour voir la pièce"); }, 1500); }
+  });
+  geoPano();
+
   /* ---------- Pas de zoom, pas de clic droit ---------- */
   document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
   ["gesturestart", "gesturechange", "gestureend"].forEach(function (t) {

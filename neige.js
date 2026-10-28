@@ -45,10 +45,14 @@
     img.src = el.currentSrc || el.src;
   }
 
+  function rel(el) {                                 // rectangle d'un élément, relatif au canevas (qui peut être décalé en panorama)
+    var r = el.getBoundingClientRect(), o = canvas.getBoundingClientRect();
+    return { left: r.left - o.left, top: r.top - o.top, right: r.right - o.left, bottom: r.bottom - o.top, width: r.width, height: r.height };
+  }
   function miseEnPlaceToit() {
     var el = document.getElementById("chalet");
     if (!el || !toit.profil) return;
-    var r = el.getBoundingClientRect();
+    var r = rel(el);
     if (!r.width || !r.height) return;
     var pas = toit.pas, n = Math.ceil(r.width / pas), premiere = !toit.h || toit.n !== n;
     var surf = new Float32Array(n), cap = new Float32Array(n), cw = toit.profil.length;
@@ -71,7 +75,7 @@
   }
   function verifieToit() {                           // le chalet a-t-il bougé (redimensionnement) ?
     var el = document.getElementById("chalet"); if (!el) return;
-    var r = el.getBoundingClientRect();
+    var r = rel(el);
     if (Math.abs(r.left - toit.x0) > 0.5 || Math.abs(r.top - toit.top) > 0.5 || Math.abs(r.width - toit.w) > 0.5) { miseEnPlaceToit(); placerZones(); }
   }
 
@@ -199,10 +203,10 @@
     covW = Math.ceil(W / CELL); covH = Math.ceil(H / CELL);
     cov = new Float32Array(covW * covH); covZ = new Uint8Array(covW * covH); accTas = 0;
     if (!fond) return;
-    var fr = fond.getBoundingClientRect(); if (!fr.width) return;
-    var cfg = window.matchMedia && matchMedia("(orientation: portrait)").matches ? ZONES_PORTRAIT : ZONES_PAYSAGE;
+    var fr = rel(fond); if (!fr.width) return;
+    var cfg = ZONES_PAYSAGE;
     var sx = fr.width / cfg.w, sy = fr.height / cfg.h, sc = fr.width / 1920;
-    var cr = ch ? ch.getBoundingClientRect() : null;
+    var cr = ch ? rel(ch) : null;
 
     cfg.zones.forEach(function (zc) {
       var pts = zc.pts.map(function (q) { return [fr.left + q[0] * sx, fr.top + q[1] * sy]; });
@@ -315,12 +319,12 @@
 
   function taille() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = window.innerWidth; H = window.innerHeight;
+    W = canvas.clientWidth || window.innerWidth; H = canvas.clientHeight || window.innerHeight;
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     fabriqueSprites();
-    var n = Math.round(Math.max(220, Math.min(750, (W * H) / 2600)));
+    var n = Math.round(Math.max(220, Math.min(W > window.innerWidth * 1.3 ? 1100 : 750, (W * H) / 2600)));
     if (reduit) n = Math.round(n / 3);
     var base = flocons.filter(function (f) { return !f.temp; });
     while (base.length < n) base.push(nouveau(true));
@@ -334,10 +338,11 @@
     var t = e.timeStamp || performance.now();
     if (ptr.actif && ptr.t && t > ptr.t) {            // vitesse du curseur : il « souffle » les flocons
       var d = Math.max(8, t - ptr.t) / 1000;
-      ptr.vx = ptr.vx * 0.5 + ((e.clientX - ptr.x) / d) * 0.5;
+      ptr.vx = ptr.vx * 0.5 + ((e.clientX - canvas.getBoundingClientRect().left - ptr.x) / d) * 0.5;
       ptr.vy = ptr.vy * 0.5 + ((e.clientY - ptr.y) / d) * 0.5;
     }
-    ptr.t = t; ptr.x = e.clientX; ptr.y = e.clientY; ptr.actif = true;
+    var ox = canvas.getBoundingClientRect().left, cx = e.clientX - ox;
+    ptr.t = t; ptr.x = cx; ptr.y = e.clientY; ptr.actif = true;
   }
   window.addEventListener("pointermove", pointeur, { passive: true });
   window.addEventListener("pointerdown", pointeur, { passive: true });

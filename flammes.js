@@ -12,7 +12,7 @@
   function pret() { return img && img.complete && img.naturalWidth; }
 
   function construire() {
-    var portrait = matchMedia("(orientation: portrait)").matches;
+    var portrait = false;
     var jour = CAL.flammes[A.n];
     cfg = jour ? (portrait ? jour.mobile : jour.desktop) : null;
     regs = []; lueurs = [];
