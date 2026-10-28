@@ -55,6 +55,23 @@
     return "background-size:" + (100 / fw).toFixed(3) + "% " + (100 / fh).toFixed(3) + "%;" +
            "background-position:" + (fx / (1 - fw) * 100).toFixed(3) + "% " + (fy / (1 - fh) * 100).toFixed(3) + "%;";
   }
+  /* Décors vus par les fenêtres (img/fenetres/fNN.webp, largeur/hauteur ci-dessous) : on attribue à chaque fenêtre celui dont les proportions
+     lui vont le mieux, en répartissant pour limiter les doublons. */
+  var DECORS_FEN = [[1, 1.29], [2, 1.16], [3, .66], [4, 2.11], [5, .61], [6, 1.46], [7, 1.37], [8, 1.27], [9, .61], [10, .47], [11, .85], [12, .94], [13, 1.35], [14, .58], [15, .91]];
+  var decorDe = {};
+  (function () {
+    var emploi = DECORS_FEN.map(function () { return 0; });
+    for (var n = 1; n <= 24; n++) {
+      var bx = CH.boxes[n]; if (!bx || n === CHEMINEE) continue;
+      var asp = bx[2] * RATIO / bx[3], best = 0, bc = 1e9;
+      DECORS_FEN.forEach(function (d, i) {
+        var c = Math.abs(Math.log(asp / d[1])) + 0.45 * emploi[i];
+        if (c < bc) { bc = c; best = i; }
+      });
+      emploi[best]++;
+      decorDe[n] = "img/fenetres/f" + (DECORS_FEN[best][0] < 10 ? "0" : "") + DECORS_FEN[best][0] + ".webp";
+    }
+  })();
   function construire() {
     portes.textContent = "";
     for (var n = 1; n <= 24; n++) {
@@ -73,7 +90,7 @@
       b.style.cssText = "left:" + (x * 100).toFixed(3) + "%;top:" + (y * 100).toFixed(3) + "%;width:" +
                         (w * 100).toFixed(3) + "%;height:" + (h * 100).toFixed(3) + "%;--rad:" + rad;
 
-      var html = '<span class="interieur"></span><span class="halo"></span>';
+      var html = '<span class="interieur"' + (decorDe[n] ? ' style="--img:url(' + decorDe[n] + ')"' : "") + '></span><span class="halo"></span>';
       if (n === CHEMINEE) {
         html += '<span class="fumee"><i></i><i></i><i></i></span><span class="chiffre">3</span>';
       } else if (FENETRES_DOUBLES.indexOf(n) >= 0) {
@@ -249,6 +266,9 @@
   var lutins = document.createElement("div");
   lutins.id = "lutins";
   document.getElementById("chalet").appendChild(lutins);
+  var vitres = document.createElement("div");               // les vitres, par-dessus les lutins : on les voit « derrière les carreaux »
+  vitres.id = "vitres";
+  document.getElementById("chalet").appendChild(vitres);
 
   /* Lutins en couleur, proportions humaines (SVG peint à plat avec ombrages). Vus de profil/trois-quarts, tournés vers la droite
      (retournés pour aller vers la gauche). Variantes : 4 qui portent des cadeaux, 3 qui fabriquent. */
@@ -347,9 +367,14 @@
   function majMasqueLutins() {
     var W = lutins.offsetWidth, H = lutins.offsetHeight, d = "";
     if (!W || !H) return;
+    vitres.textContent = "";
     fenetresVisibles().forEach(function (n) {
       var b = CH.boxes[n], ix = 0.03, x = (b[0] + b[2] * ix) * W, y = (b[1] + b[3] * ix) * H, w = b[2] * (1 - 2 * ix) * W, h = b[3] * (1 - 2 * ix) * H;
       var f = function (v) { return v.toFixed(1); };
+      var vt = document.createElement("div");
+      vt.style.cssText = "left:" + f(x) + "px;top:" + f(y) + "px;width:" + f(w) + "px;height:" + f(h) + "px;border-radius:" +
+        (ROND.indexOf(n) >= 0 ? "50%" : ARCHE.indexOf(n) >= 0 ? "50% 50% 0 0 / " + f(w / 2) + "px " + f(w / 2) + "px 0 0" : ".3cqw");
+      vitres.appendChild(vt);
       if (ROND.indexOf(n) >= 0) {
         var r = Math.min(w, h) / 2, cx = x + w / 2, cy = y + h / 2;
         d += "M" + f(cx - r) + " " + f(cy) + "a" + f(r) + " " + f(r) + " 0 1 0 " + f(2 * r) + " 0a" + f(r) + " " + f(r) + " 0 1 0 " + f(-2 * r) + " 0z";
