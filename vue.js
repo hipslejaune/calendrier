@@ -402,7 +402,12 @@
   img.onload = function () {
     gl.activeTexture(gl.TEXTURE0); texBg = tex(img, true);
     pret = true; document.body.classList.add("decor-pret");
-    if (tactile) { activerGyro(false); setTimeout(function () { msg("Tourne ton téléphone pour regarder autour de toi"); }, 1500); }
+    if (tactile) {
+      activerGyro(false); setTimeout(function () { msg("Tourne ton téléphone pour regarder autour de toi"); }, 1500);
+      setTimeout(function () {                                       // pas de capteur (ou bloqué) : le doigt fait tourner la vue
+        if (!gyro.actif) { gyroRefuse = true; msg("Glisse le doigt sur l’image pour regarder autour de toi"); }
+      }, 3500);
+    }
     else setTimeout(function () { msg("Clique et glisse pour regarder autour de toi"); }, 1500);
   };
   var iml = new Image();
