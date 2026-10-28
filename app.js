@@ -251,7 +251,30 @@
 
   /* ---------- Fermer toutes les portes ---------- */
   var boutonFermer = document.getElementById("fermer");
-  function majFermer() { boutonFermer.disabled = ouvertes.length === 0; }
+  var boutonOuvrir = document.getElementById("ouvrir");
+  function majFermer() {
+    boutonFermer.disabled = ouvertes.length === 0;
+    var reste = false;                                    // reste-t-il une case disponible (jusqu'à aujourd'hui) encore fermée ?
+    for (var n = 1; n <= AUJ; n++) if (boutons[n] && ouvertes.indexOf(n) < 0) { reste = true; break; }
+    boutonOuvrir.disabled = !reste;
+  }
+  boutonOuvrir.addEventListener("click", function () {
+    premierGeste();
+    fermerCarte();
+    var aOuvrir = [];
+    for (var n = 1; n <= AUJ; n++) if (boutons[n] && ouvertes.indexOf(n) < 0) aOuvrir.push(n);
+    if (!aOuvrir.length) return;
+    aOuvrir.forEach(function (n, i) {                       // elles s'ouvrent l'une après l'autre
+      setTimeout(function () {
+        if (!boutons[n] || boutons[n].classList.contains("ouverte")) return;
+        boutons[n].classList.add("ouverte");
+        if (ouvertes.indexOf(n) < 0) { ouvertes.push(n); ecrire(cleOuvertes, ouvertes); majFermer(); }
+        ouvertA[n] = Date.now(); majVitres(); setTimeout(majMasqueLutins, 1350);
+        if (i % 3 === 0) grincement();
+      }, i * 170);
+    });
+    message("Toutes les portes disponibles s'ouvrent 🎄");
+  });
   boutonFermer.addEventListener("click", function () {
     if (!ouvertes.length) return;
     premierGeste();
@@ -473,9 +496,10 @@
       do { v = Math.floor(Math.random() * MODELES.length); } while (photosOK.length && v < NB_PORTE);   // photos dispo : plus de porteurs dessinés
     }
     var travail = !!tphoto || (!photo && v >= NB_PORTE && v < 7);
-    // il entre par le bord gauche de sa fenêtre, marche vers la droite à hauteur constante et sort par le bord droit
-    var dir = 1, demi = (photo ? hauteur * 220 / 208 * 150 / 220 : largeur) / 2;
-    var xs = ba[0] * W - demi - 2, xe = (ba[0] + ba[2]) * W + demi + 2;
+    // il entre par un bord de sa fenêtre (gauche ou droite au hasard), marche à hauteur constante et sort par l'autre bord
+    var dir = Math.random() < 0.5 ? 1 : -1, demi = (photo ? hauteur * 220 / 208 * 150 / 220 : largeur) / 2;
+    var gauche = ba[0] * W - demi - 2, droite = (ba[0] + ba[2]) * W + demi + 2;
+    var xs = dir > 0 ? gauche : droite, xe = dir > 0 ? droite : gauche;
     var pts = [[xs, fa]];
     if (travail) pts.push([xa, fa], [xa, fa]);                      // il s'arrête au milieu de sa fenêtre pour travailler
     pts.push([xe, fa]);

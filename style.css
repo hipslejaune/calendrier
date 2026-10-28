@@ -164,12 +164,19 @@ body.glisse #vue{cursor:grabbing}
 #son.muet .coupe{display:block}
 #son.muet .onde{display:none}
 #son:focus-visible{outline:.15rem solid #fff;outline-offset:.15rem}
-#fermer{
+#actions{
   position:fixed;right:calc(max(.8rem,env(safe-area-inset-right)) + 3.2rem);bottom:max(.8rem,env(safe-area-inset-bottom));z-index:20;
+  display:flex;gap:.5rem;
+}
+#fermer,#ouvrir{
   height:2.6rem;padding:0 1.05rem;border-radius:1.3rem;cursor:pointer;font:inherit;font-size:.95rem;font-weight:700;
   color:#fff3cf;background:rgba(14,22,48,.72);border:1px solid rgba(233,196,106,.55);white-space:nowrap;
   transition:opacity .25s;
 }
+@media (max-width:430px){#fermer,#ouvrir{padding:0 .7rem;font-size:.82rem}#actions{gap:.35rem}}
+#ouvrir:disabled{opacity:.45;cursor:default}
+#ouvrir:not(:disabled):hover{background:rgba(40,52,92,.85)}
+#ouvrir:focus-visible{outline:.15rem solid #fff;outline-offset:.15rem}
 #fermer:disabled{opacity:.45;cursor:default}
 #fermer:not(:disabled):hover{background:rgba(40,52,92,.85)}
 #fermer:focus-visible{outline:.15rem solid #fff;outline-offset:.15rem}
