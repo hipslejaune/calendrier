@@ -11,13 +11,10 @@
 <div id="scene">
   <div id="stage">
     <div id="fond"></div>
-    <div id="chalet" aria-label="Chalet du calendrier de l'Avent">
-      <div class="cheminee"></div>
-      <div class="toit"></div>
-      <div class="toit-neige"></div>
-      <div class="rebord"></div>
-      <div class="mur" id="mur"></div>
-      <div class="socle"></div>
+    <div id="chalet">
+      <div class="ombre"></div>
+      <img id="chalet-img" src="img/chalet-ferme.webp" alt="Chalet du calendrier de l'Avent" draggable="false">
+      <div id="portes"></div>
     </div>
   </div>
 </div>
@@ -45,6 +42,7 @@
 <noscript><p class="noscript">Ce calendrier a besoin de JavaScript pour fonctionner.</p></noscript>
 
 <script src="jours.js"></script>
+<script src="chalet.js"></script>
 <script src="neige.js"></script>
 <script src="app.js"></script>
 </body>

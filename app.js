@@ -1,9 +1,7 @@
 (function () {
   "use strict";
   var CAL = window.CALENDRIER;
-  var mur = document.getElementById("mur");
-  var chalet = document.getElementById("chalet");
-  var carte = document.getElementById("carte");
+    var carte = document.getElementById("carte");
   var toast = document.getElementById("toast");
   var boutonSon = document.getElementById("son");
 
@@ -54,57 +52,58 @@
     };
   }
 
-  /* ---------- Fenêtres : tailles et couleurs différentes, un numéro par jour, ordre mélangé ---------- */
-  var COULEURS = ["#c0392b", "#2e7d5b", "#2f6db5", "#d99a1e", "#8e44ad", "#e0702a",
-                  "#13919b", "#c2548a", "#5f8f3a", "#3a55b8", "#a8432f", "#7a5a2e"];
-  var alea = graine(2026);
-  var jours = [];
-  for (var i = 1; i <= 24; i++) jours.push(i);
-  for (var k = jours.length - 1; k > 0; k--) {             // mélange (Fisher-Yates)
-    var j = Math.floor(alea() * (k + 1)), tmp = jours[k]; jours[k] = jours[j]; jours[j] = tmp;
-  }
-  var perso = {};                                          // propriétés fixes de chaque jour
-  var cps = COULEURS.slice();
-  jours.forEach(function (n, idx) {
-    perso[n] = { fw: alea(), fh: alea(), jx: alea() - .5, jy: alea() - .5, c: COULEURS[(idx * 5 + 3) % COULEURS.length] };
-  });
-
+  /* ---------- Portes du chalet (zones issues de chalet.js) ---------- */
+  var CH = window.CHALET, RATIO = CH.ratio;
+  var FENETRES_DOUBLES = [4, 5, 7, 8, 9, 10, 18];          // deux battants (le reste : une seule porte)
+  var CHARNIERE_DROITE = [1, 14];                           // porte qui s'ouvre côté droit
+  var ARCHE = [1, 2, 10], ROND = [9];
+  var CHEMINEE = 3, PETIT_DOUZE = 12;                       // cases ajoutées (voir chalet.js)
+  var portes = document.getElementById("portes");
   var boutons = {};
+
+  function fond(fx, fy, fw, fh) {
+    return "background-size:" + (100 / fw).toFixed(3) + "% " + (100 / fh).toFixed(3) + "%;" +
+           "background-position:" + (fx / (1 - fw) * 100).toFixed(3) + "% " + (fy / (1 - fh) * 100).toFixed(3) + "%;";
+  }
   function construire() {
-    var portrait = matchMedia("(orientation: portrait)").matches;
-    var cols = portrait ? 4 : 6, rows = portrait ? 6 : 4;
-    var wallh = portrait ? 108 : 58;
-    var pitchX = 92 / cols, pitchY = (wallh - 3) / rows;
-    var wMin = portrait ? 14 : 8.4, wMax = portrait ? 19 : 12.4;
-    var hMin = portrait ? 11.5 : 8, hMax = portrait ? 15.5 : 11.2;
-    mur.textContent = "";
-    boutons = {};
-
-    jours.forEach(function (n, idx) {
-      var col = idx % cols, row = Math.floor(idx / cols), p = perso[n];
-      var w = wMin + p.fw * (wMax - wMin), h = hMin + p.fh * (hMax - hMin);
-      var x = col * pitchX + (pitchX - w) / 2 + p.jx * (pitchX - w) * .55;
-      var y = 1.6 + row * pitchY + (pitchY - h) / 2 + p.jy * (pitchY - h) * .55;
-
+    portes.textContent = "";
+    for (var n = 1; n <= 24; n++) {
+      var bx = CH.boxes[n]; if (!bx) continue;
+      var x = bx[0], y = bx[1], w = bx[2], h = bx[3];
       var b = document.createElement("button");
       b.type = "button";
-      b.className = "fenetre" + (n > AUJ ? " futur" : "") + (n === AUJ ? " aujourdhui" : "") +
-                    (ouvertes.indexOf(n) >= 0 ? " ouverte" : "");
+      b.className = "porte" + (n === CHEMINEE ? " cheminee" : "") + (n > AUJ ? " futur" : "") +
+                    (n === AUJ ? " aujourdhui" : "") + (ouvertes.indexOf(n) >= 0 ? " ouverte" : "");
       b.dataset.jour = n;
-      b.setAttribute("aria-label", n > AUJ ? "Fenêtre du " + dateTexte(n) + " (pas encore ouvrable)" : "Ouvrir la fenêtre du " + dateTexte(n));
-      b.style.cssText = "left:" + x.toFixed(2) + "cqw;top:" + y.toFixed(2) + "cqw;width:" + w.toFixed(2) +
-                        "cqw;height:" + h.toFixed(2) + "cqw;font-size:" + (Math.min(w, h) * .26).toFixed(2) +
-                        "cqw;--c:" + p.c;
-      b.innerHTML = '<span class="interieur"></span><span class="halo"></span>' +
-        '<span class="vantail g"><i class="poignee"></i></span><span class="vantail d"><i class="poignee"></i></span>' +
-        '<span class="cadre"></span><span class="num">' + n + "</span>";
-      mur.appendChild(b);
+      b.setAttribute("aria-label", n > AUJ ? "Case du " + dateTexte(n) + " (pas encore ouvrable)" : "Ouvrir la case du " + dateTexte(n));
+
+      var rv = (50 * w * RATIO / h).toFixed(2);              // rayon vertical d'une arche, en % de la hauteur
+      var rad = ARCHE.indexOf(n) >= 0 ? "50% 50% 0 0 / " + rv + "% " + rv + "% 0 0"
+              : ROND.indexOf(n) >= 0 ? "50%" : ".3cqw";
+      b.style.cssText = "left:" + (x * 100).toFixed(3) + "%;top:" + (y * 100).toFixed(3) + "%;width:" +
+                        (w * 100).toFixed(3) + "%;height:" + (h * 100).toFixed(3) + "%;--rad:" + rad;
+
+      var html = '<span class="interieur"></span><span class="halo"></span>';
+      if (n === CHEMINEE) {
+        html += '<span class="fumee"><i></i><i></i><i></i></span><span class="chiffre">3</span>';
+      } else if (FENETRES_DOUBLES.indexOf(n) >= 0) {
+        var rg, rd;
+        if (ROND.indexOf(n) >= 0) { rg = "100% 0 0 100% / 50% 0 0 50%"; rd = "0 100% 100% 0 / 0 50% 50% 0"; }
+        else if (ARCHE.indexOf(n) >= 0) { rg = "100% 0 0 0 / " + rv + "% 0 0 0"; rd = "0 100% 0 0 / 0 " + rv + "% 0 0"; }
+        else { rg = rd = ".3cqw"; }
+        html += '<span class="vantail g" style="border-radius:' + rg + '"><span class="face" style="' + fond(x, y, w / 2, h) + '"></span><span class="dos"></span></span>' +
+                '<span class="vantail d" style="border-radius:' + rd + '"><span class="face" style="' + fond(x + w / 2, y, w / 2, h) + '"></span><span class="dos"></span></span>';
+      } else {
+        var cote = CHARNIERE_DROITE.indexOf(n) >= 0 ? "r" : "l";
+        var plus = n === PETIT_DOUZE ? '<span class="rustine"><span class="chiffre">12</span></span>' : "";
+        html += '<span class="vantail ' + cote + '" style="border-radius:' + rad + '"><span class="face" style="' + fond(x, y, w, h) + '">' + plus + '</span><span class="dos"></span></span>';
+      }
+      b.innerHTML = html;
+      portes.appendChild(b);
       boutons[n] = b;
-    });
+    }
   }
   construire();
-  var mq = matchMedia("(orientation: portrait)");
-  (mq.addEventListener ? mq.addEventListener.bind(mq, "change") : mq.addListener.bind(mq))(construire);
 
   /* ---------- Sons : grincement synthétisé + musique du jour ---------- */
   var ac = null;
@@ -234,13 +233,13 @@
 
   /* ---------- Clic sur une fenêtre ---------- */
   var occupe = false;
-  mur.addEventListener("click", function (e) {
-    var b = e.target.closest(".fenetre"); if (!b || occupe) return;
+  portes.addEventListener("click", function (e) {
+    var b = e.target.closest(".porte"); if (!b || occupe) return;
     var n = +b.dataset.jour;
 
     if (n > AUJ) {                                         // jours futurs : impossible
       b.classList.remove("refus"); void b.offsetWidth; b.classList.add("refus");
-      message("Patience… cette fenêtre s'ouvrira le " + dateTexte(n) + " 🎄");
+      message("Patience… cette case s'ouvrira le " + dateTexte(n) + " 🎄");
       return;
     }
     if (b.classList.contains("ouverte")) { afficherCarte(n); return; }
