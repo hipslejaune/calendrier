@@ -169,12 +169,12 @@
     " if(uLmOn>.5){vec2 lp=vec2(px.x-uLr.x,px.y-uLr.y)/uLr.zw;\n" +
     "  if(lp.x>=0.&&lp.x<=1.&&lp.y>=0.&&lp.y<=1.){vec4 s=texture(uLm,lp);float ph=s.g*255.;\n" +
     "   float tw=.5+.5*sin(uT*(1.6+hsh(ph)*2.2)+ph*3.7);tw=smoothstep(.2,.95,tw);\n" +
-    "   c*=mix(1.,mix(.4,1.5,tw),s.r);c+=vec3(1.,.8,.45)*s.r*tw*tw*.22;}}\n" +
-    " {float fl=.5+.3*sin(uT*3.1)+.2*sin(uT*5.7+1.3)+.12*sin(uT*9.3+.4)+.08*sin(uT*14.1);\n" +
+    "   c+=vec3(1.,.82,.5)*s.r*tw*.42;}}\n" +
+    " {float fl=.5+.3*sin(uT*.62)+.2*sin(uT*1.14+1.3)+.12*sin(uT*1.86+.4)+.08*sin(uT*2.8);\n" +
     "  vec2 fd=vec2(px.x-1520.,px.y-815.);float r=length(fd*vec2(1.,1.2));\n" +
     "  float inb=(1.-smoothstep(52.,78.,abs(fd.x)))*(1.-smoothstep(36.,56.,abs(px.y-822.)));\n" +
-    "  c*=1.+inb*.3*fl;\n" +
-    "  c+=vec3(1.,.5,.16)*(exp(-r/60.)*.5+exp(-r/150.)*.22+exp(-r/340.)*.14)*fl*(.55+.45*inb+.45);}\n" +
+    "  c*=1.+inb*.21*fl;\n" +
+    "  c+=vec3(1.,.5,.16)*(exp(-r/60.)*.5+exp(-r/150.)*.22+exp(-r/340.)*.14)*fl*.7*(.55+.45*inb+.45);}\n" +
     " c+=vec3(1.,.58,.2)*glow;\n" +
     " for(int t=0;t<2;t++){vec4 T=uTr[t];\n" +
     "  c+=guirlande(px,T,float(t)*101.);\n" +
