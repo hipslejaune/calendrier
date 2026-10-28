@@ -78,22 +78,35 @@
   }
   function placerChalet() {
     if (!plan) calculPlan();
-    // Quand on regarde le meuble de très loin sur le côté, un plan strictement tangent s'étire démesurément puis disparaît.
-    // On le tourne donc un peu vers la caméra (85 % de l’écart d’angle) : même ancrage au meuble, mais il reste net et visible.
-    var del = Math.atan2(B.f[0] * plan.rx + B.f[2] * plan.rz, B.f[0] * plan.ox + B.f[2] * plan.oz), t = 0.85 * del;
-    var cr = Math.cos(t), sr = Math.sin(t), ax = cr * plan.rx - sr * plan.ox, az = cr * plan.rz - sr * plan.oz;
-    function pt(x, y) { return [plan.ox + ax * x, plan.yb + y, plan.oz + az * x]; }
+    // Le chalet est un objet FIXE posé sur le meuble : plan vertical à sa place dans la pièce, projeté par la même caméra que le décor.
+    // On utilise une vraie transformation CSS 3D (perspective = focale) : le navigateur découpe correctement la partie qui passe
+    // derrière la caméra, donc le chalet ne disparaît plus d'un coup quand on regarde le meuble de côté.
+    var sc = chaletEl.parentNode;
+    if (V.pf !== V.f || V.pw !== V.w || V.ph !== V.h) {
+      V.pf = V.f; V.pw = V.w; V.ph = V.h;
+      sc.style.perspective = V.f.toFixed(2) + "px"; sc.style.perspectiveOrigin = (V.w / 2).toFixed(1) + "px " + (V.h / 2).toFixed(1) + "px";
+    }
     var w2 = plan.w / 2, hh = plan.w * HA;
-    var q = [ecran(pt(-w2, hh)), ecran(pt(w2, hh)), ecran(pt(w2, 0)), ecran(pt(-w2, 0))];
-    if (!q[0] || !q[1] || !q[2] || !q[3]) { chaletEl.style.visibility = "hidden"; V.rect.width = 0; return; }
+    var Pc = [[plan.ox - plan.rx * w2, plan.yb + hh, plan.oz - plan.rz * w2], [plan.ox + plan.rx * w2, plan.yb + hh, plan.oz + plan.rz * w2],
+              [plan.ox + plan.rx * w2, plan.yb, plan.oz + plan.rz * w2], [plan.ox - plan.rx * w2, plan.yb, plan.oz - plan.rz * w2]];
+    var zs = Pc.map(function (P) { return P[0] * B.f[0] + P[1] * B.f[1] + P[2] * B.f[2]; });
+    if (Math.max.apply(null, zs) < 0.02) { chaletEl.style.visibility = "hidden"; V.rect.width = 0; V.hom = null; return; }
     chaletEl.style.visibility = "";
-    var W = plan.Wpx, H = W * HA;
+    var W = plan.Wpx, H = W * HA, F = V.f, k = plan.w / W;       // k : unités du monde par pixel du chalet
+    function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+    var ex = [plan.rx, 0, plan.rz], ey = [0, -1, 0], O = Pc[0];
+    var col0 = [F * k * dot(ex, B.r), -F * k * dot(ex, B.u), -F * k * dot(ex, B.f)];
+    var col1 = [F * k * dot(ey, B.r), -F * k * dot(ey, B.u), -F * k * dot(ey, B.f)];
+    var t = [V.w / 2 + F * dot(O, B.r), V.h / 2 - F * dot(O, B.u), F * (1 - dot(O, B.f))];
+    chaletEl.style.transform = "matrix3d(" + [col0[0], col0[1], col0[2], 0, col1[0], col1[1], col1[2], 0, 0, 0, 1, 0, t[0], t[1], t[2], 1].map(function (n) { return n.toFixed(6); }).join(",") + ")";
+    // homographie écran <-> chalet (pour la neige du toit) : seulement si les 4 coins sont devant la caméra
+    var q = [ecran(Pc[0]), ecran(Pc[1]), ecran(Pc[2]), ecran(Pc[3])];
+    if (!q[0] || !q[1] || !q[2] || !q[3]) { V.hom = null; V.rect.width = 0; return; }
     var x0 = q[0][0], y0 = q[0][1], x1 = q[1][0], y1 = q[1][1], x2 = q[2][0], y2 = q[2][1], x3 = q[3][0], y3 = q[3][1];
     var dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
     var den = dx1 * dy2 - dy1 * dx2, g = (dx3 * dy2 - dy3 * dx2) / den, h = (dx1 * dy3 - dy1 * dx3) / den;
     var a = x1 - x0 + g * x1, b = x3 - x0 + h * x3, d = y1 - y0 + g * y1, e = y3 - y0 + h * y3;
     V.hom = { a: a, b: b, c: x0, d: d, e: e, f: y0, g: g, h: h, W: W, H: H };
-    chaletEl.style.transform = "matrix3d(" + [a / W, d / W, 0, g / W, b / H, e / H, 0, h / H, 0, 0, 1, 0, x0, y0, 0, 1].map(function (n) { return n.toFixed(6); }).join(",") + ")";
     var r = V.rect;                                       // rectangle équivalent (pour la neige du toit)
     r.left = (x0 + x3) / 2; r.width = ((x1 - x0) + (x2 - x3)) / 2; r.top = (y0 + y1) / 2; r.height = ((y3 + y2) / 2) - r.top;
   }
