@@ -53,7 +53,7 @@ body.glisse #vue{cursor:grabbing}
   box-shadow:inset 0 0 .7cqw rgba(70,28,0,.65);
 }
 /* Le décor vu par la fenêtre apparaît quand le halo retombe */
-.interieur::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--img) center/cover no-repeat;opacity:0;transition:opacity 1.5s ease 1.1s}
+.interieur::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--img) var(--bp,center)/var(--bs,cover) no-repeat;opacity:0;transition:opacity 1.5s ease 1.1s}
 .porte.ouverte .interieur::before{opacity:1}
 #vitres{position:absolute;inset:0;pointer-events:none;z-index:6}
 #vitres .vitre{position:absolute;pointer-events:none;overflow:hidden;opacity:0;animation:vitre-in 1.2s ease 1s forwards;

@@ -57,22 +57,38 @@
   }
   /* Décors vus par les fenêtres (img/fenetres/fNN.webp, largeur/hauteur ci-dessous) : on attribue à chaque fenêtre celui dont les proportions
      lui vont le mieux, en répartissant pour limiter les doublons. */
-  var DECORS_FEN = [[1, 1.29], [2, 1.16], [3, .66], [4, 2.11], [5, .61], [6, 1.46], [7, 1.37], [8, 1.27], [9, .61], [10, .47], [11, .85], [12, .94], [13, 1.35], [14, .58], [15, .91]];
-  var AVEC_BARREAUX = [1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 14];       // images qui ont déjà leurs croisillons : on n'en rajoute pas
-  var decorDe = {}, decorNum = {};
+  var DECORS_FEN = [[1, 1.29], [2, 1.16], [3, .66], [4, 2.11], [5, .61], [6, 1.46], [7, 1.37], [8, 1.27], [9, .61], [10, .47], [11, .85], [12, .94], [13, 1.35], [14, .58], [15, .91], [16, 1.04], [17, .95], [18, 1.12], [19, 1.29], [20, .63], [21, 1.71], [22, 1.77]];
+  // L'image 23 (le Père Noël et ses lutins) est partagée par les cases 13 et 14, qui donnent sur la même pièce.
+  var IMG_COMMUNE = { n: 23, asp: 1.42, cases: [13, 14] };
+  var AVEC_BARREAUX = [1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 14, 18, 19];       // images qui ont déjà leurs croisillons : on n'en rajoute pas
+  var decorDe = {}, decorNum = {}, decorPos = {};
   (function () {
     var emploi = DECORS_FEN.map(function () { return 0; });
     for (var n = 1; n <= 24; n++) {
-      var bx = CH.boxes[n]; if (!bx || n === CHEMINEE) continue;
+      var bx = CH.boxes[n]; if (!bx || n === CHEMINEE || IMG_COMMUNE.cases.indexOf(n) >= 0) continue;
       var asp = bx[2] * RATIO / bx[3], best = 0, bc = 1e9;
       DECORS_FEN.forEach(function (d, i) {
-        var c = Math.abs(Math.log(asp / d[1])) + 0.45 * emploi[i];
+        var c = Math.abs(Math.log(asp / d[1])) + 1.6 * emploi[i];
         if (c < bc) { bc = c; best = i; }
       });
       emploi[best]++;
       decorNum[n] = DECORS_FEN[best][0];
       decorDe[n] = "img/fenetres/f" + (DECORS_FEN[best][0] < 10 ? "0" : "") + DECORS_FEN[best][0] + ".webp";
     }
+    // image commune : on l'étale sur le rectangle qui réunit les deux ouvertures, chacune en montre sa part
+    var bs = IMG_COMMUNE.cases.map(function (n) { return CH.boxes[n]; });
+    var ux = Math.min.apply(null, bs.map(function (b) { return b[0]; })), uy = Math.min.apply(null, bs.map(function (b) { return b[1]; }));
+    var ux2 = Math.max.apply(null, bs.map(function (b) { return b[0] + b[2]; })), uy2 = Math.max.apply(null, bs.map(function (b) { return b[1] + b[3]; }));
+    var Uw = ux2 - ux, Uh = (uy2 - uy) / RATIO, iw, ih;                       // hauteurs exprimées en « largeurs de chalet »
+    if (Uw / Uh > IMG_COMMUNE.asp) { iw = Uw; ih = Uw / IMG_COMMUNE.asp; } else { ih = Uh; iw = Uh * IMG_COMMUNE.asp; }
+    var ix = ux + (Uw - iw) / 2, iy = uy / RATIO + (Uh - ih) / 2;
+    IMG_COMMUNE.cases.forEach(function (n, k) {
+      var b = CH.boxes[n], bh = b[3] / RATIO, by = b[1] / RATIO;
+      var px = iw - b[2] > 1e-6 ? (b[0] - ix) / (iw - b[2]) * 100 : 50, py = ih - bh > 1e-6 ? (by - iy) / (ih - bh) * 100 : 50;
+      decorNum[n] = IMG_COMMUNE.n;
+      decorDe[n] = "img/fenetres/f" + IMG_COMMUNE.n + ".webp";
+      decorPos[n] = "--bs:" + (iw / b[2] * 100).toFixed(2) + "% " + (ih / bh * 100).toFixed(2) + "%;--bp:" + px.toFixed(2) + "% " + py.toFixed(2) + "%";
+    });
   })();
   function construire() {
     portes.textContent = "";
@@ -92,7 +108,7 @@
       b.style.cssText = "left:" + (x * 100).toFixed(3) + "%;top:" + (y * 100).toFixed(3) + "%;width:" +
                         (w * 100).toFixed(3) + "%;height:" + (h * 100).toFixed(3) + "%;--rad:" + rad;
 
-      var html = '<span class="interieur"' + (decorDe[n] ? ' style="--img:url(' + decorDe[n] + ')"' : "") + '></span><span class="halo"></span>';
+      var html = '<span class="interieur"' + (decorDe[n] ? ' style="--img:url(' + decorDe[n] + ');' + (decorPos[n] || "") + '"' : "") + '></span><span class="halo"></span>';
       if (n === CHEMINEE) {
         html += '<span class="fumee"><i></i><i></i><i></i></span><span class="chiffre">3</span>';
       } else if (FENETRES_DOUBLES.indexOf(n) >= 0) {
