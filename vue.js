@@ -34,8 +34,9 @@
   var DEG = PI / 180;
   function reg(a, b) { return ((a % b) + b) % b; }
 
-  function base() {                                      // vecteurs de la caméra
-    var cy = Math.cos(V.yaw), sy = Math.sin(V.yaw), cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
+  function base(yaw, pitch) {                            // vecteurs de la caméra
+    if (yaw === undefined) { yaw = V.yaw; pitch = V.pitch; }
+    var cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
     return { f: [sy * cp, sp, cy * cp], r: [cy, 0, -sy], u: [-sy * sp, cp, -cy * sp] };
   }
   var B = base();
@@ -58,18 +59,23 @@
 
   /* ---------- Chalet : posé sur le meuble ---------- */
   var HA = 1541 / 1200;                                  // hauteur / largeur du chalet
+  // Le chalet reste FIXE à l'écran (là où il est au départ) ; quand on tourne, il pivote légèrement : effet 3D.
+  var fixe = null;
+  function calculFixe() {
+    var c = D.chalet, Bx = B; B = base(D.vue.yaw, D.vue.pitch);
+    var p = proj(c.u, c.vBase); B = Bx;
+    var larg = 2 * V.f * Math.tan(c.larg * DEG / 2);
+    fixe = { x: p ? p[0] : V.w / 2, y: p ? p[1] : V.h * 0.8, larg: larg };
+    chaletEl.style.width = larg.toFixed(1) + "px";
+    V.rect.left = fixe.x - larg / 2; V.rect.top = fixe.y - larg * HA; V.rect.width = larg; V.rect.height = larg * HA;
+  }
   function placerChalet() {
-    var c = D.chalet, larg = 2 * V.f * Math.tan(c.larg * DEG / 2);
-    var p = proj(c.u, c.vBase);
-    if (!p) { chaletEl.style.visibility = "hidden"; V.rect.width = 0; return; }
-    chaletEl.style.visibility = "";
-    var a = (p[0] - V.w / 2) / V.f, b = -(p[1] - V.h / 2) / V.f;
-    var s = Math.sqrt(1 + a * a + b * b);                // éloigné du centre : plus de distance, un peu plus grand
-    s = Math.min(1.6, s);
-    if (Math.abs(larg - chaletEl._larg) > 0.3) { chaletEl.style.width = larg.toFixed(1) + "px"; chaletEl._larg = larg; }
-    chaletEl.style.transform = "translate3d(" + (p[0] - larg / 2).toFixed(1) + "px," + (p[1] - larg * HA).toFixed(1) + "px,0) scale(" + s.toFixed(3) + ")";
-    V.rect.left = p[0] - larg * s / 2; V.rect.top = p[1] - larg * HA * s;
-    V.rect.width = larg * s; V.rect.height = larg * HA * s; V.chaletS = s;
+    if (!fixe) calculFixe();
+    var d = V.yaw - D.vue.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+    var dp = V.pitch - D.vue.pitch;
+    var ry = Math.max(-16, Math.min(16, d * 0.45 / DEG)), rx = Math.max(-6, Math.min(6, -dp * 0.25 / DEG));
+    chaletEl.style.transform = "translate3d(" + (fixe.x - fixe.larg / 2).toFixed(1) + "px," + (fixe.y - fixe.larg * HA).toFixed(1) +
+      "px,0) perspective(1300px) rotateY(" + ry.toFixed(2) + "deg) rotateX(" + rx.toFixed(2) + "deg)";
   }
 
   /* ---------- WebGL ---------- */
@@ -141,8 +147,7 @@
     var vfov = (V.h > V.w ? D.vue.fovPortrait : D.vue.fovPaysage) * DEG;
     V.f = (V.h / 2) / Math.tan(vfov / 2);
     if (gl) gl.viewport(0, 0, cv.width, cv.height);
-    chaletEl._larg = -1;
-    V.vu++;
+    fixe = null; V.vu++;
   }
   window.addEventListener("resize", taille);
 

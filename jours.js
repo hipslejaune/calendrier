@@ -19,7 +19,9 @@ window.CALENDRIER = {
       // calque de neige : rectangle du décor couvert (u0 + largeur, avec raccord par le bord), v0 + hauteur
       region: { U0: 2000, V0: 560, RW: 1712, RH: 520 },
       // zones où la neige se dépose : polygones en (colonne - U0, ligne). chalet:true = le chalet masque le dessus
-      zones: [
+      // (désactivé : la neige ne se dépose plus que sur le toit du chalet) — remettre dans "zones" pour la réactiver
+      zones: [],
+      zonesDesactivees: [
         { nom: "meuble", chalet: true, budget: 3.2, rx: 1.9, ry: 0.85, a: [0.45, 0.75],
           pts: [[265,840],[340,812],[470,792],[620,795],[720,820],[800,845],[1040,845],[1080,815],[1180,790],[1300,788],[1420,805],[1500,848],
                 [1460,900],[1400,935],[1300,970],[1200,998],[1100,1018],[1000,1030],[900,1036],[800,1030],[700,1018],[600,998],[500,975],[400,945],[330,915],[275,875]] },
