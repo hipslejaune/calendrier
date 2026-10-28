@@ -363,18 +363,34 @@
              maintenant - (ouvertA[n] || 0) > 1300;
     });
   }
+  /* Vitres : par-dessus les lutins, avec les barreaux (croisillons) de chaque fenêtre ouverte. Les lutins passent donc DERRIÈRE. */
+  function majVitres() {
+    var p = function (v) { return (v * 100).toFixed(3) + "%"; };       // positions en % du chalet : ne dépendent pas de sa taille en pixels
+    Array.prototype.slice.call(vitres.children).forEach(function (el) {            // fenêtres refermées
+      var n = +el.dataset.n; if (!boutons[n] || !boutons[n].classList.contains("ouverte")) el.remove();
+    });
+    ouvertes.forEach(function (n) {
+      var b = CH.boxes[n]; if (n === CHEMINEE || !b || !boutons[n] || !boutons[n].classList.contains("ouverte")) return;
+      if (vitres.querySelector('[data-n="' + n + '"]')) return;
+      var ix = 0.03, x = b[0] + b[2] * ix, y = b[1] + b[3] * ix, w = b[2] * (1 - 2 * ix), h = b[3] * (1 - 2 * ix);
+      var asp = w * RATIO / h, nv = asp > 1.25 ? 2 : 1, nh = asp < 0.75 ? 2 : 1, i, html = "";
+      for (i = 1; i <= nv; i++) html += '<i class="bv" style="left:' + (i * 100 / (nv + 1)).toFixed(2) + '%"></i>';
+      for (i = 1; i <= nh; i++) html += '<i class="bh" style="top:' + (i * 100 / (nh + 1)).toFixed(2) + '%"></i>';
+      var vt = document.createElement("div");
+      vt.className = "vitre"; vt.dataset.n = n; vt.innerHTML = html;
+      vt.style.cssText = "left:" + p(x) + ";top:" + p(y) + ";width:" + p(w) + ";height:" + p(h) + ";border-radius:" +
+        (ROND.indexOf(n) >= 0 ? "50%" : ARCHE.indexOf(n) >= 0 ? "50% 50% 0 0 / " + (50 / asp).toFixed(2) + "% " + (50 / asp).toFixed(2) + "% 0 0" : ".3cqw");
+      vitres.appendChild(vt);
+    });
+  }
   // Les lutins ne sont visibles que dans les fenêtres ouvertes : on découpe leur calque selon ces fenêtres.
   function majMasqueLutins() {
     var W = lutins.offsetWidth, H = lutins.offsetHeight, d = "";
     if (!W || !H) return;
-    vitres.textContent = "";
+    majVitres();
     fenetresVisibles().forEach(function (n) {
       var b = CH.boxes[n], ix = 0.03, x = (b[0] + b[2] * ix) * W, y = (b[1] + b[3] * ix) * H, w = b[2] * (1 - 2 * ix) * W, h = b[3] * (1 - 2 * ix) * H;
       var f = function (v) { return v.toFixed(1); };
-      var vt = document.createElement("div");
-      vt.style.cssText = "left:" + f(x) + "px;top:" + f(y) + "px;width:" + f(w) + "px;height:" + f(h) + "px;border-radius:" +
-        (ROND.indexOf(n) >= 0 ? "50%" : ARCHE.indexOf(n) >= 0 ? "50% 50% 0 0 / " + f(w / 2) + "px " + f(w / 2) + "px 0 0" : ".3cqw");
-      vitres.appendChild(vt);
       if (ROND.indexOf(n) >= 0) {
         var r = Math.min(w, h) / 2, cx = x + w / 2, cy = y + h / 2;
         d += "M" + f(cx - r) + " " + f(cy) + "a" + f(r) + " " + f(r) + " 0 1 0 " + f(2 * r) + " 0a" + f(r) + " " + f(r) + " 0 1 0 " + f(-2 * r) + " 0z";
@@ -388,6 +404,7 @@
     lutins.style.clipPath = d ? 'path("' + d + '")' : 'path("M0 0")';
   }
   window.addEventListener("resize", majMasqueLutins);
+  setTimeout(majMasqueLutins, 700); setTimeout(majMasqueLutins, 2500);     // une fois la taille du chalet définie par la vue
 
   function lancerLutin() {
     if (sansAnim || document.hidden || nLutins >= 3) return;
@@ -489,7 +506,7 @@
     b.classList.add("ouverte");
     grincement();
     if (ouvertes.indexOf(n) < 0) { ouvertes.push(n); ecrire(cleOuvertes, ouvertes); majFermer(); }
-    ouvertA[n] = Date.now(); setTimeout(majMasqueLutins, 1350);
+    ouvertA[n] = Date.now(); majVitres(); setTimeout(majMasqueLutins, 1350);
     setTimeout(function () { occupe = false; afficherCarte(n); }, 1300);
   });
 
