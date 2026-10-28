@@ -67,6 +67,14 @@
       var pente = Math.abs(b - a) / (Math.min(n - 1, i + 3) - Math.max(0, i - 3)) / pas;
       cap[i] = k * (18 * (1 - Math.min(1, pente * 0.6)) + 8);
     }
+    var surfB = new Float32Array(n), R = 9;                     // silhouette du toit arrondie : le faîte de neige est un dôme, pas un trait droit
+    for (i = 0; i < n; i++) {
+      if (surf[i] !== surf[i]) { surfB[i] = NaN; continue; }
+      var sm = 0, cn = 0;
+      for (var d = -R; d <= R; d++) { var q = surf[i + d]; if (q === q && i + d >= 0 && i + d < n) { var wq = 1 - Math.abs(d) / (R + 1); sm += q * wq; cn += wq; } }
+      surfB[i] = cn ? sm / cn : surf[i];
+    }
+    toit.surfB = surfB;
     var h = new Float32Array(n);
     if (premiere) { for (i = 0; i < n; i++) h[i] = cap[i] * 0.2; }     // un peu de neige dès l'arrivée
     else { for (i = 0; i < n; i++) h[i] = Math.min(toit.h[i], cap[i]); }
@@ -109,7 +117,7 @@
     for (i = 0; i < n; i++) {
       var ok = surf[i] === surf[i] && h[i] > 0.4;
       if (ok) {
-        var x = (i + 0.5) * pas, y = surf[i] - h[i];
+        var x = (i + 0.5) * pas, y = Math.min(toit.surfB[i] - h[i], surf[i] - 0.5);
         if (!run) { run = true; debut = i; c.moveTo(x, surf[i] + bas); c.lineTo(x, y); }
         else c.lineTo(x, y);
       } else if (run) { run = false; fermer(i - 1); }
