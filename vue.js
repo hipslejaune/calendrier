@@ -112,11 +112,11 @@
   }
 
   /* ---------- WebGL ---------- */
-  var prog, loc = {}, texBg, texSnow, snowCanvas = null, snowSale = false, pret = false;
+  var prog, loc = {}, texBg, texSnow, texBoard, snowCanvas = null, snowSale = false, pret = false;
   var VS = "#version 300 es\nvoid main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-1.,0.,1.);}";
   var FS = "#version 300 es\nprecision highp float;\n" +
     "uniform sampler2D uBg;uniform sampler2D uSnow;uniform vec3 uF,uR,uU;uniform vec2 uRes,uTex;uniform float uFoc,uT,uFlN;\n" +
-    "uniform vec4 uFl[16];uniform vec4 uReg;uniform float uSnowOn;out vec4 o;const float PI=3.14159265;\n" +
+    "uniform vec4 uFl[16];uniform vec4 uReg;uniform float uSnowOn;uniform sampler2D uBoard;uniform vec4 uBd;uniform float uBdOn;out vec4 o;const float PI=3.14159265;\n" +
     "uniform vec4 uTr[2];uniform vec4 uSt[2];uniform vec3 uSc[2];uniform vec4 uAr,uGu,uEx;\n" +
     "float hsh(float n){return fract(sin(n*91.345+17.1)*43758.5453);}\n" +
     "vec3 pal(float h){int i=int(floor(h*6.));\n" +
@@ -170,10 +170,11 @@
     "  float ta=(px.y-uAr.y)/(uAr.z-uAr.y);\n" +
     "  if(ta>0.&&ta<1.&&abs(px.x-uAr.x)<uAr.w*(1.-pow(1.-ta,1.6))+4.&&!(px.x>uEx.x&&px.x<uEx.z&&px.y>uEx.y&&px.y<uEx.w)){zone=true;zid=1.;}\n" +
     "  if(px.x>uGu.x&&px.x<uGu.z&&px.y>uGu.y&&px.y<uGu.w){zone=true;zid=2.;}\n" +
-    "  if(zone){float mx=max(c.r,max(c.g,c.b));float m=smoothstep(.6,.88,mx);\n" +
-    "   vec2 cell=floor(px/4.);float id=hsh(cell.x*3.7+cell.y*11.9+zid*5.);\n" +
-    "   float tw=.5+.5*sin(uT*(6.+id*8.)+id*60.);tw=smoothstep(.1,.95,tw);\n" +
-    "   c*=mix(1.,mix(.35,1.6,tw),m);c+=vec3(1.,.82,.5)*m*tw*tw*.1;}}\n" +
+    "  if(zone){float mx=max(c.r,max(c.g,c.b));vec3 bl=textureLod(uBg,uv,2.5).rgb;float mb=max(bl.r,max(bl.g,bl.b));\n" +
+    "   float m=smoothstep(.1,.28,mx-mb)*smoothstep(.55,.8,mx);\n" +
+    "   vec2 cell=floor(px/6.);float id=hsh(cell.x*3.7+cell.y*11.9+zid*5.);\n" +
+    "   float tw=.5+.5*sin(uT*(6.+id*8.)+id*60.);tw=smoothstep(.15,.95,tw);\n" +
+    "   c*=mix(1.,mix(.5,1.5,tw),m);c+=vec3(1.,.82,.5)*m*tw*tw*.12;}}\n" +
     " c+=vec3(1.,.58,.2)*glow;\n" +
     " for(int t=0;t<2;t++){vec4 T=uTr[t];\n" +
     "  c+=guirlande(px,T,float(t)*101.);\n" +
@@ -183,6 +184,9 @@
     "   vec4 st=etoile(dd,S.x,S.y,S.z,uSc[t]*tw);c=mix(c,st.rgb,st.a);}}\n" +
     " if(uSnowOn>.5){vec2 rp=vec2(mod(px.x-uReg.x,uTex.x),px.y-uReg.y)/uReg.zw;\n" +
     "  if(rp.x>=0.&&rp.x<=1.&&rp.y>=0.&&rp.y<=1.){vec4 s=texture(uSnow,rp);c=c*(1.-s.a)+s.rgb*vec3(1.,.97,.93);}}\n" +
+    " if(uBdOn>.5){vec2 bp=vec2(mod(px.x-uBd.x+uTex.x*.5,uTex.x)-uTex.x*.5,px.y-uBd.y)/uBd.zw;\n" +
+    "  if(bp.x>=0.&&bp.x<=1.&&bp.y>=0.&&bp.y<=1.){vec4 s=texture(uBoard,bp);vec3 bc=s.rgb*vec3(.96,.9,.8);\n" +
+    "   float ed=min(min(bp.x,1.-bp.x),min(bp.y,1.-bp.y));bc*=.8+.2*smoothstep(0.,.08,ed);c=mix(c,bc,.94);}}\n" +
     " o=vec4(c,1.);}";
 
   function shader(t, src) {
@@ -205,8 +209,9 @@
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
     gl.useProgram(prog);
-    ["uBg", "uSnow", "uF", "uR", "uU", "uRes", "uTex", "uFoc", "uT", "uFlN", "uFl", "uReg", "uSnowOn", "uTr", "uSt", "uSc", "uAr", "uGu", "uEx"].forEach(function (n) { loc[n] = gl.getUniformLocation(prog, n); });
-    gl.uniform1i(loc.uBg, 0); gl.uniform1i(loc.uSnow, 1);
+    ["uBg", "uSnow", "uF", "uR", "uU", "uRes", "uTex", "uFoc", "uT", "uFlN", "uFl", "uReg", "uSnowOn", "uBoard", "uBd", "uBdOn", "uTr", "uSt", "uSc", "uAr", "uGu", "uEx"].forEach(function (n) { loc[n] = gl.getUniformLocation(prog, n); });
+    gl.uniform1i(loc.uBg, 0); gl.uniform1i(loc.uSnow, 1); gl.uniform1i(loc.uBoard, 2);
+    var TB = D.tableau || [2084, 784, 132, 101]; gl.uniform4f(loc.uBd, TB[0], TB[1], TB[2], TB[3]); gl.uniform1f(loc.uBdOn, 0);
     gl.uniform2f(loc.uTex, D.w, D.h);
     var fl = D.flammes || [], arr = new Float32Array(64);
     fl.slice(0, 16).forEach(function (q, i) { arr[i * 4] = q[0]; arr[i * 4 + 1] = q[1]; arr[i * 4 + 2] = q[2]; arr[i * 4 + 3] = q[3]; });
@@ -221,6 +226,7 @@
     gl.uniform4f(loc.uReg, D.region.U0, D.region.V0, D.region.RW, D.region.RH);
     gl.activeTexture(gl.TEXTURE1); texSnow = tex(null, false);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+    gl.activeTexture(gl.TEXTURE2); texBoard = tex(null, true);
     gl.activeTexture(gl.TEXTURE0);
   }
 
@@ -268,6 +274,18 @@
   document.addEventListener("click", function (e) {                        // un glissement n'ouvre pas une porte
     if (Date.now() - dernierGlisse < 350) { e.stopPropagation(); e.preventDefault(); }
   }, true);
+  function surTableau(x, y) {
+    if (!pret) return false; var p = inv(x, y), T = D.tableau || [2084, 784, 132, 101];
+    var dx = p[0] - T[0]; dx -= D.w * Math.floor(dx / D.w + .5);
+    return dx >= 0 && dx <= T[2] && p[1] >= T[1] && p[1] <= T[3] + T[1];
+  }
+  document.addEventListener("click", function (e) {
+    if (e.target.closest && e.target.closest("#carte,#actions,#son,#pano,#chalet,#tableau-grand")) return;
+    if (surTableau(e.clientX, e.clientY) && window.OUVRIR_TABLEAU) window.OUVRIR_TABLEAU();
+  });
+  window.addEventListener("pointermove", function (e) {
+    if (e.pointerType === "mouse" && !glisse) cv.style.cursor = surTableau(e.clientX, e.clientY) ? "pointer" : "";
+  }, { passive: true });
   var touches = {};
   window.addEventListener("keydown", function (e) {
     if (document.getElementById("carte") && !document.getElementById("carte").hidden) return;
@@ -329,6 +347,12 @@
       return [(m.a * u + m.b * w + m.c) / den, (m.d * u + m.e * w + m.f) / den];
     },
     largeurLocale: function () { return V.hom ? V.hom.W : 0; },
+    tableau: function (canvas) {
+      if (!gl || !texBoard) return;
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, texBoard);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas); gl.generateMipmap(gl.TEXTURE_2D);
+      gl.activeTexture(gl.TEXTURE0); gl.uniform1f(loc.uBdOn, 1);
+    },
     neige: function (canvas) { snowCanvas = canvas; snowSale = true; },
     sale: function () { snowSale = true; }
   };

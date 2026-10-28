@@ -418,6 +418,56 @@
     return '<svg viewBox="0 0 40 66" aria-hidden="true">' + MODELES[v % MODELES.length](T) + "</svg>";
   }
 
+
+  /* ---------- Tableau à craie (mur sous la fenêtre aux rideaux) : un jour ouvert = une ligne écrite à la craie ---------- */
+  var COURT = ["Un compliment à une maman","Un petit plaisir rien que pour toi","15 min de gym ou de yoga","La phrase qui remonte le moral","Danse de Noël en famille","Balade avec les enfants + photo","Selfie de maman en pyjama","Un café ou goûter entre mamans","Un moment drôle ou raté","Portrait robot de la maman parfaite","Le trophée du fail de la semaine","Ton sapin et ta déco de Noël","Photo avant / après le café","Un livre ou une série à partager","Défi gainage : la planche","Lettre à toi-même d’il y a 5 ans","Recette chocolat chaud ou gâteaux","Défi imitation : ta voix qui gronde","Le CV improbable de maman","Défi grimace ou fou rire","Une chose gourmande pour toi","La phrase la plus drôle des enfants","Une carte postale à une maman","Photo de famille en pulls de Noël"];
+  var tabC = document.createElement("canvas"); tabC.width = 1280; tabC.height = 985;
+  function dessinerTableau() {
+    var c = tabC.getContext("2d"), W = tabC.width, H = tabC.height;
+    c.clearRect(0, 0, W, H);
+    var g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#7a5230"); g.addColorStop(.5, "#5b3a20"); g.addColorStop(1, "#6d4627");
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    var m = 38, rg = c.createRadialGradient(W / 2, H / 2, H * .15, W / 2, H / 2, W * .65);
+    rg.addColorStop(0, "#35433f"); rg.addColorStop(1, "#1f2926");
+    c.fillStyle = rg; c.fillRect(m, m, W - 2 * m, H - 2 * m);
+    c.strokeStyle = "rgba(0,0,0,.55)"; c.lineWidth = 6; c.strokeRect(m, m, W - 2 * m, H - 2 * m);
+    for (var i = 0; i < 260; i++) {                                         // traces de chiffon
+      c.fillStyle = "rgba(235,240,235," + (Math.random() * .035) + ")";
+      c.beginPath(); c.ellipse(m + Math.random() * (W - 2 * m), m + Math.random() * (H - 2 * m), 30 + Math.random() * 120, 6 + Math.random() * 20, Math.random() * 3, 0, 7); c.fill();
+    }
+    var pol = '"Segoe Print","Bradley Hand","Chalkduster","Comic Sans MS","Marker Felt",cursive';
+    c.textBaseline = "middle"; c.fillStyle = "rgba(255,243,200,.95)";
+    c.font = "bold 66px " + pol; c.textAlign = "center";
+    c.fillText("✦ Les défis de l’Avent ✦", W / 2, 105);
+    c.strokeStyle = "rgba(255,243,200,.6)"; c.lineWidth = 3; c.beginPath(); c.moveTo(W * .2, 150); c.quadraticCurveTo(W / 2, 162, W * .8, 148); c.stroke();
+    var colW = (W - 2 * m - 80) / 2, y0 = 212, pas = 58;
+    c.textAlign = "left";
+    for (var n = 1; n <= 24; n++) {
+      var col = n <= 12 ? 0 : 1, row = (n - 1) % 12, x = m + 40 + col * (colW + 0), y = y0 + row * pas;
+      var ouv = boutons[n] && boutons[n].classList.contains("ouverte");
+      c.save(); c.translate(x, y); c.rotate((((n * 37) % 7) - 3) * .004);
+      if (ouv) {
+        var t = COURT[n - 1], f = 38; c.fillStyle = "rgba(255,243,200,.96)"; c.font = f + "px " + pol;
+        c.fillText(n + ".", 0, 0);
+        var maxW = colW - 90; while (c.measureText(t).width > maxW && f > 18) { f--; c.font = f + "px " + pol; }
+        c.fillText(t, 62, 0);
+      } else {
+        c.fillStyle = "rgba(255,243,200,.22)"; c.font = "34px " + pol; c.fillText(n + ".", 0, 0);
+        c.fillRect(62, 4, 150 + ((n * 53) % 90), 2);
+      }
+      c.restore();
+    }
+    c.fillStyle = "rgba(255,243,200,.5)"; c.font = "26px " + pol; c.textAlign = "center";
+    c.fillText("Une case de plus chaque jour…", W / 2, H - 52);
+    if (window.VUE && VUE.tableau) VUE.tableau(tabC);
+  }
+  window.dessinerTableau = dessinerTableau;
+  var grand = document.createElement("div"); grand.id = "tableau-grand"; grand.hidden = true;
+  grand.innerHTML = '<canvas width="1280" height="985"></canvas>'; document.body.appendChild(grand);
+  grand.addEventListener("click", function () { grand.hidden = true; });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") grand.hidden = true; });
+  window.OUVRIR_TABLEAU = function () { dessinerTableau(); grand.querySelector("canvas").getContext("2d").drawImage(tabC, 0, 0); grand.hidden = false; };
+  setTimeout(dessinerTableau, 300); setTimeout(dessinerTableau, 1500);
   var nLutins = 0, tLutin = 0, ouvertA = {};
   var sansAnim = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   function fenetresVisibles() {                               // fenêtres ouvertes (cheminée exclue) et déjà bien ouvertes
@@ -429,6 +479,7 @@
   }
   /* Vitres : par-dessus les lutins, avec les barreaux (croisillons) de chaque fenêtre ouverte. Les lutins passent donc DERRIÈRE. */
   function majVitres() {
+    if (window.dessinerTableau) window.dessinerTableau();
     var p = function (v) { return (v * 100).toFixed(3) + "%"; };       // positions en % du chalet : ne dépendent pas de sa taille en pixels
     Array.prototype.slice.call(vitres.children).forEach(function (el) {            // fenêtres refermées
       var n = +el.dataset.n; if (!boutons[n] || !boutons[n].classList.contains("ouverte")) el.remove();
