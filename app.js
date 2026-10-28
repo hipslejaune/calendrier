@@ -197,6 +197,20 @@
   });
   majBoutonSon();
 
+  /* ---------- Fermer toutes les portes ---------- */
+  var boutonFermer = document.getElementById("fermer");
+  function majFermer() { boutonFermer.disabled = ouvertes.length === 0; }
+  boutonFermer.addEventListener("click", function () {
+    if (!ouvertes.length) return;
+    premierGeste();
+    fermerCarte();
+    Object.keys(boutons).forEach(function (n) { boutons[n].classList.remove("ouverte"); });
+    ouvertes = []; ecrire(cleOuvertes, ouvertes);
+    grincement();
+    majFermer();
+    message("Les portes sont refermées 🎄");
+  });
+
   /* ---------- Message temporaire ---------- */
   var minuteurToast = 0;
   function message(txt) {
@@ -231,6 +245,8 @@
   carte.querySelector(".carte-voile").addEventListener("click", fermerCarte);
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") fermerCarte(); });
 
+  majFermer();
+
   /* ---------- Clic sur une fenêtre ---------- */
   var occupe = false;
   portes.addEventListener("click", function (e) {
@@ -247,7 +263,7 @@
     occupe = true;
     b.classList.add("ouverte");
     grincement();
-    if (ouvertes.indexOf(n) < 0) { ouvertes.push(n); ecrire(cleOuvertes, ouvertes); }
+    if (ouvertes.indexOf(n) < 0) { ouvertes.push(n); ecrire(cleOuvertes, ouvertes); majFermer(); }
     setTimeout(function () { occupe = false; afficherCarte(n); }, 1300);
   });
 
