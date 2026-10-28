@@ -112,11 +112,11 @@
   }
 
   /* ---------- WebGL ---------- */
-  var prog, loc = {}, texBg, texSnow, texBoard, snowCanvas = null, snowSale = false, pret = false;
+  var prog, loc = {}, texBg, texSnow, texBoard, texLm, snowCanvas = null, snowSale = false, pret = false;
   var VS = "#version 300 es\nvoid main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-1.,0.,1.);}";
   var FS = "#version 300 es\nprecision highp float;\n" +
     "uniform sampler2D uBg;uniform sampler2D uSnow;uniform vec3 uF,uR,uU;uniform vec2 uRes,uTex;uniform float uFoc,uT,uFlN;\n" +
-    "uniform vec4 uFl[16];uniform vec4 uReg;uniform float uSnowOn;uniform sampler2D uBoard;uniform vec4 uBd;uniform float uBdOn;out vec4 o;const float PI=3.14159265;\n" +
+    "uniform vec4 uFl[16];uniform vec4 uReg;uniform float uSnowOn;uniform sampler2D uBoard;uniform sampler2D uLm;uniform vec4 uLr;uniform float uLmOn;uniform vec4 uBd;uniform float uBdOn;out vec4 o;const float PI=3.14159265;\n" +
     "uniform vec4 uTr[2];uniform vec4 uSt[2];uniform vec3 uSc[2];uniform vec4 uAr,uGu,uEx;\n" +
     "float hsh(float n){return fract(sin(n*91.345+17.1)*43758.5453);}\n" +
     "vec3 pal(float h){int i=int(floor(h*6.));\n" +
@@ -166,22 +166,17 @@
     "  glow+=m*m*(.16+.08*sin(uT*6.3+f.x)+.05*sin(uT*13.1+f.x*2.));}\n" +
     " vec2 uv=vec2((px.x+sh.x)/uTex.x,(px.y+sh.y)/uTex.y);\n" +
     " vec3 c=textureGrad(uBg,uv,dX,dY).rgb;\n" +
-    " {bool zone=false;float zid=0.;\n" +
-    "  float ta=(px.y-uAr.y)/(uAr.z-uAr.y);\n" +
-    "  if(ta>0.&&ta<1.&&abs(px.x-uAr.x)<uAr.w*(1.-pow(1.-ta,1.6))+4.&&!(px.x>uEx.x&&px.x<uEx.z&&px.y>uEx.y&&px.y<uEx.w)){zone=true;zid=1.;}\n" +
-    "  if(px.x>uGu.x&&px.x<uGu.z&&px.y>uGu.y&&px.y<uGu.w){zone=true;zid=2.;}\n" +
-    "  if(zone){float mx=max(c.r,max(c.g,c.b));vec3 bl=textureLod(uBg,uv,2.5).rgb;float mb=max(bl.r,max(bl.g,bl.b));\n" +
-    "   float m=smoothstep(.1,.28,mx-mb)*smoothstep(.55,.8,mx);\n" +
-    "   vec2 cell=floor(px/6.);float id=hsh(cell.x*3.7+cell.y*11.9+zid*5.);\n" +
-    "   float tw=.5+.5*sin(uT*(6.+id*8.)+id*60.);tw=smoothstep(.15,.95,tw);\n" +
-    "   c*=mix(1.,mix(.5,1.5,tw),m);c+=vec3(1.,.82,.5)*m*tw*tw*.12;}}\n" +
+    " if(uLmOn>.5){vec2 lp=vec2(px.x-uLr.x,px.y-uLr.y)/uLr.zw;\n" +
+    "  if(lp.x>=0.&&lp.x<=1.&&lp.y>=0.&&lp.y<=1.){vec4 s=texture(uLm,lp);float ph=s.g*255.;\n" +
+    "   float tw=.5+.5*sin(uT*(9.+hsh(ph)*9.)+ph*3.7);tw=smoothstep(.2,.95,tw);\n" +
+    "   c*=mix(1.,mix(.55,1.6,tw),s.r);c+=vec3(1.,.8,.45)*s.r*tw*tw*.22;}}\n" +
     " c+=vec3(1.,.58,.2)*glow;\n" +
     " for(int t=0;t<2;t++){vec4 T=uTr[t];\n" +
     "  c+=guirlande(px,T,float(t)*101.);\n" +
     "  vec4 S=uSt[t];float cy=T.y-S.x*.38;float dx=px.x-T.x;dx-=uTex.x*floor(dx/uTex.x+.5);vec2 dd=vec2(dx,px.y-cy);\n" +
     "  if(length(dd)<S.x*4.){float tw=.9+.1*sin(uT*2.3+float(t)*2.);\n" +
     "   c+=uSc[t]*exp(-length(dd)/(S.x*.9))*.22*tw;\n" +
-    "   vec4 st=etoile(dd,S.x,S.y,S.z,uSc[t]*tw);c=mix(c,st.rgb,st.a);}}\n" +
+    "   }}\n" +
     " if(uSnowOn>.5){vec2 rp=vec2(mod(px.x-uReg.x,uTex.x),px.y-uReg.y)/uReg.zw;\n" +
     "  if(rp.x>=0.&&rp.x<=1.&&rp.y>=0.&&rp.y<=1.){vec4 s=texture(uSnow,rp);c=c*(1.-s.a)+s.rgb*vec3(1.,.97,.93);}}\n" +
     " if(uBdOn>.5){vec2 bp=vec2(mod(px.x-uBd.x+uTex.x*.5,uTex.x)-uTex.x*.5,px.y-uBd.y)/uBd.zw;\n" +
@@ -209,8 +204,8 @@
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
     gl.useProgram(prog);
-    ["uBg", "uSnow", "uF", "uR", "uU", "uRes", "uTex", "uFoc", "uT", "uFlN", "uFl", "uReg", "uSnowOn", "uBoard", "uBd", "uBdOn", "uTr", "uSt", "uSc", "uAr", "uGu", "uEx"].forEach(function (n) { loc[n] = gl.getUniformLocation(prog, n); });
-    gl.uniform1i(loc.uBg, 0); gl.uniform1i(loc.uSnow, 1); gl.uniform1i(loc.uBoard, 2);
+    ["uBg", "uSnow", "uF", "uR", "uU", "uRes", "uTex", "uFoc", "uT", "uFlN", "uFl", "uReg", "uSnowOn", "uBoard", "uLm", "uLr", "uLmOn", "uBd", "uBdOn", "uTr", "uSt", "uSc", "uAr", "uGu", "uEx"].forEach(function (n) { loc[n] = gl.getUniformLocation(prog, n); });
+    gl.uniform1i(loc.uBg, 0); gl.uniform1i(loc.uSnow, 1); gl.uniform1i(loc.uBoard, 2); gl.uniform1i(loc.uLm, 3); gl.uniform4f(loc.uLr, 960, 480, 800, 460); gl.uniform1f(loc.uLmOn, 0);
     var TB = D.tableau || [2084, 784, 132, 101]; gl.uniform4f(loc.uBd, TB[0], TB[1], TB[2], TB[3]); gl.uniform1f(loc.uBdOn, 0);
     gl.uniform2f(loc.uTex, D.w, D.h);
     var fl = D.flammes || [], arr = new Float32Array(64);
@@ -227,6 +222,7 @@
     gl.activeTexture(gl.TEXTURE1); texSnow = tex(null, false);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
     gl.activeTexture(gl.TEXTURE2); texBoard = tex(null, true);
+    gl.activeTexture(gl.TEXTURE3); texLm = tex(null, false);
     gl.activeTexture(gl.TEXTURE0);
   }
 
@@ -394,6 +390,9 @@
     if (tactile) { activerGyro(false); setTimeout(function () { msg("Tourne ton téléphone pour regarder autour de toi"); }, 1500); }
     else setTimeout(function () { msg("Clique et glisse pour regarder autour de toi"); }, 1500);
   };
+  var iml = new Image();
+  iml.onload = function () { gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, texLm); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, iml); gl.uniform1f(loc.uLmOn, 1); gl.activeTexture(gl.TEXTURE0); };
+  iml.src = "img/lumieres.png";
   img.src = D.img;
   requestAnimationFrame(image);
 })();
