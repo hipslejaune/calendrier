@@ -421,7 +421,7 @@
 
   /* ---------- Tableau à craie (mur sous la fenêtre aux rideaux) : un jour ouvert = une ligne écrite à la craie ---------- */
   var COURT = ["Un compliment à une maman","Un petit plaisir rien que pour toi","15 min de gym ou de yoga","La phrase qui remonte le moral","Danse de Noël en famille","Balade avec les enfants + photo","Selfie de maman en pyjama","Un café ou goûter entre mamans","Un moment drôle ou raté","Portrait robot de la maman parfaite","Le trophée du fail de la semaine","Ton sapin et ta déco de Noël","Photo avant / après le café","Un livre ou une série à partager","Défi gainage : la planche","Lettre à toi-même d’il y a 5 ans","Recette chocolat chaud ou gâteaux","Défi imitation : ta voix qui gronde","Le CV improbable de maman","Défi grimace ou fou rire","Une chose gourmande pour toi","La phrase la plus drôle des enfants","Une carte postale à une maman","Photo de famille en pulls de Noël"];
-  var tabC = document.createElement("canvas"); tabC.width = 1280; tabC.height = 985;
+  var tabC = document.createElement("canvas"); tabC.width = 1800; tabC.height = 1385;
   function dessinerTableau() {
     var c = tabC.getContext("2d"), W = tabC.width, H = tabC.height;
     c.clearRect(0, 0, W, H);
@@ -437,33 +437,53 @@
     }
     var pol = '"Segoe Print","Bradley Hand","Chalkduster","Comic Sans MS","Marker Felt",cursive';
     c.textBaseline = "middle"; c.fillStyle = "rgba(255,243,200,.95)";
-    c.font = "bold 66px " + pol; c.textAlign = "center";
-    c.fillText("✦ Les défis de l’Avent ✦", W / 2, 105);
-    c.strokeStyle = "rgba(255,243,200,.6)"; c.lineWidth = 3; c.beginPath(); c.moveTo(W * .2, 150); c.quadraticCurveTo(W / 2, 162, W * .8, 148); c.stroke();
-    var colW = (W - 2 * m - 80) / 2, y0 = 212, pas = 58;
-    c.textAlign = "left";
-    for (var n = 1; n <= 24; n++) {
-      var col = n <= 12 ? 0 : 1, row = (n - 1) % 12, x = m + 40 + col * (colW + 0), y = y0 + row * pas;
-      var ouv = boutons[n] && boutons[n].classList.contains("ouverte");
-      c.save(); c.translate(x, y); c.rotate((((n * 37) % 7) - 3) * .004);
-      if (ouv) {
-        var t = COURT[n - 1], f = 38; c.fillStyle = "rgba(255,243,200,.96)"; c.font = f + "px " + pol;
-        c.fillText(n + ".", 0, 0);
-        var maxW = colW - 90; while (c.measureText(t).width > maxW && f > 18) { f--; c.font = f + "px " + pol; }
-        c.fillText(t, 62, 0);
-      } else {
-        c.fillStyle = "rgba(255,243,200,.22)"; c.font = "34px " + pol; c.fillText(n + ".", 0, 0);
-        c.fillRect(62, 4, 150 + ((n * 53) % 90), 2);
+    c.font = "bold 78px " + pol; c.textAlign = "center";
+    c.fillText("✦ Les défis de l’Avent ✦", W / 2, 110);
+    c.strokeStyle = "rgba(255,243,200,.6)"; c.lineWidth = 3; c.beginPath(); c.moveTo(W * .2, 158); c.quadraticCurveTo(W / 2, 170, W * .8, 156); c.stroke();
+    var colW = (W - 2 * m - 90) / 2, y0 = 200, yMax = H - 95, tw0 = colW - 80;
+    function lignes(t, f) {
+      c.font = f + "px " + pol; var mots = t.split(" "), L = [], cur = "";
+      mots.forEach(function (w) { var essai = cur ? cur + " " + w : w; if (c.measureText(essai).width > tw0 && cur) { L.push(cur); cur = w; } else cur = essai; });
+      if (cur) L.push(cur); return L;
+    }
+    function texteDe(n) { var j = CAL.jours[n]; return (j && j.texte ? j.texte : "").replace(/\s+/g, " "); }
+    function ouvert(n) { return boutons[n] && boutons[n].classList.contains("ouverte"); }
+    var f = 34, ok = false;
+    while (!ok && f > 12) {
+      ok = true;
+      for (var col = 0; col < 2 && ok; col++) {
+        var h = 0;
+        for (var k = 1; k <= 12; k++) { var n = col * 12 + k; h += ouvert(n) ? lignes(texteDe(n), f).length * f * 1.18 + f * .4 : f * 1.5; }
+        if (h > yMax - y0) ok = false;
       }
-      c.restore();
+      if (!ok) f--;
+    }
+    c.textAlign = "left";
+    for (var col = 0; col < 2; col++) {
+      var y = y0, x = m + 45 + col * colW;
+      for (var k = 1; k <= 12; k++) {
+        var n = col * 12 + k;
+        c.save(); c.translate(x, y); c.rotate((((n * 37) % 7) - 3) * .003);
+        if (ouvert(n)) {
+          var L = lignes(texteDe(n), f);
+          c.font = "bold " + f + "px " + pol; c.fillStyle = "rgba(255,226,140,.98)"; c.fillText(n + ".", 0, f * .6);
+          c.font = f + "px " + pol; c.fillStyle = "rgba(255,243,210,.95)";
+          L.forEach(function (l, i) { c.fillText(l, 62, f * .6 + i * f * 1.18); });
+          y += L.length * f * 1.18 + f * .4;
+        } else {
+          c.fillStyle = "rgba(255,243,200,.22)"; c.font = f + "px " + pol; c.fillText(n + ".", 0, f * .6);
+          c.fillRect(62, f * .6 + 4, 150 + ((n * 53) % 90), 2); y += f * 1.5;
+        }
+        c.restore();
+      }
     }
     c.fillStyle = "rgba(255,243,200,.5)"; c.font = "26px " + pol; c.textAlign = "center";
-    c.fillText("Une case de plus chaque jour…", W / 2, H - 52);
+    c.fillText("Une case de plus chaque jour…", W / 2, H - 45);
     if (window.VUE && VUE.tableau) VUE.tableau(tabC);
   }
   window.dessinerTableau = dessinerTableau;
   var grand = document.createElement("div"); grand.id = "tableau-grand"; grand.hidden = true;
-  grand.innerHTML = '<canvas width="1280" height="985"></canvas>'; document.body.appendChild(grand);
+  grand.innerHTML = '<canvas width="1800" height="1385"></canvas>'; document.body.appendChild(grand);
   grand.addEventListener("click", function () { grand.hidden = true; });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") grand.hidden = true; });
   window.OUVRIR_TABLEAU = function () { dessinerTableau(); grand.querySelector("canvas").getContext("2d").drawImage(tabC, 0, 0); grand.hidden = false; };
