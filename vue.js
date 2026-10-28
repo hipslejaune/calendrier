@@ -66,9 +66,7 @@
     var c = D.chalet, w = 2 * Math.tan(c.larg * DEG / 2), yb = Math.tan((0.5 - c.vBase / D.h) * PI);
     var lon = c.u / D.w * TAU, sl = Math.sin(lon), cl = Math.cos(lon);
     // repère du plan : origine au pied, x vers la droite, y vers le haut ; il regarde l'observateur (au centre)
-    var ox = sl, oz = cl, rx = cl, rz = -sl;
-    function pt(x, y) { return [ox + rx * x, yb + y, oz + rz * x]; }
-    plan = { w: w, h: w * HA, P: [pt(-w / 2, w * HA), pt(w / 2, w * HA), pt(w / 2, 0), pt(-w / 2, 0)] };   // HG, HD, BD, BG
+    plan = { w: w, h: w * HA, ox: sl, oz: cl, rx: cl, rz: -sl, yb: yb };
     plan.Wpx = 2 * V.f * Math.tan(c.larg * DEG / 2);
     chaletEl.style.width = plan.Wpx.toFixed(1) + "px";
     chaletEl.style.transformOrigin = "0 0";
@@ -80,7 +78,13 @@
   }
   function placerChalet() {
     if (!plan) calculPlan();
-    var q = [ecran(plan.P[0]), ecran(plan.P[1]), ecran(plan.P[2]), ecran(plan.P[3])];
+    // Quand on regarde le meuble de très loin sur le côté, un plan strictement tangent s'étire démesurément puis disparaît.
+    // On le tourne donc un peu vers la caméra (85 % de l’écart d’angle) : même ancrage au meuble, mais il reste net et visible.
+    var del = Math.atan2(B.f[0] * plan.rx + B.f[2] * plan.rz, B.f[0] * plan.ox + B.f[2] * plan.oz), t = 0.85 * del;
+    var cr = Math.cos(t), sr = Math.sin(t), ax = cr * plan.rx - sr * plan.ox, az = cr * plan.rz - sr * plan.oz;
+    function pt(x, y) { return [plan.ox + ax * x, plan.yb + y, plan.oz + az * x]; }
+    var w2 = plan.w / 2, hh = plan.w * HA;
+    var q = [ecran(pt(-w2, hh)), ecran(pt(w2, hh)), ecran(pt(w2, 0)), ecran(pt(-w2, 0))];
     if (!q[0] || !q[1] || !q[2] || !q[3]) { chaletEl.style.visibility = "hidden"; V.rect.width = 0; return; }
     chaletEl.style.visibility = "";
     var W = plan.Wpx, H = W * HA;
