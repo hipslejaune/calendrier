@@ -405,6 +405,8 @@
     if (tactile) {
       activerGyro(false); setTimeout(function () { msg("Tourne ton téléphone pour regarder autour de toi"); }, 1500);
       setTimeout(function () {                                       // pas de capteur (ou bloqué) : le doigt fait tourner la vue
+        var DOE = window.DeviceOrientationEvent;
+        if (DOE && typeof DOE.requestPermission === "function") return;      // iPhone : la permission se demande au toucher, on ne bascule pas au doigt
         if (!gyro.actif) { gyroRefuse = true; msg("Glisse le doigt sur l’image pour regarder autour de toi"); }
       }, 3500);
     }
