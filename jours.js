@@ -50,13 +50,29 @@ window.CALENDRIER = {
   // Contenu derrière chaque fenêtre (clé = numéro du jour).
   // Champs : titre, texte (paragraphes séparés par une ligne vide), image (optionnel, ex. "img/surprise-01.webp")
   jours: {
-    1: {
-      titre: "Premier jour !",
-      texte: "Bienvenue dans le calendrier de l'Avent 2026.\n\n(Texte du jour 1 à remplacer.)"
-    },
-    2: {
-      titre: "Titre 1",
-      texte: "Texte 1"
-    }
+    1: { titre: "Jour 1", texte: "Un compliment à écrire à une autre maman du groupe." },
+    2: { titre: "Jour 2", texte: "Un petit plaisir à t’offrir cette semaine, rien que pour toi, pas de scrupule !" },
+    3: { titre: "Jour 3", texte: "Une séance de gym ou de yoga de 15 minutes en vidéo à faire chez soi." },
+    4: { titre: "Jour 4", texte: "La phrase qui te remonte le moral les mauvais jours." },
+    5: { titre: "Jour 5", texte: "Une danse en famille sur une chanson de Noël, avec les enfants." },
+    6: { titre: "Jour 6", texte: "Une balade en poussette ou à vélo avec les enfants, photo du trajet." },
+    7: { titre: "Jour 7", texte: "Un selfie de maman en pyjama, sans filtre." },
+    8: { titre: "Jour 8", texte: "Un café ou un goûter entre mamans à caler dans le mois." },
+    9: { titre: "Jour 9", texte: "Une photo d’un moment drôle ou raté de la maison." },
+    10: { titre: "Jour 10", texte: "Le portrait robot de la maman parfaite : chacune écrit en une phrase le superpouvoir qu’elle aimerait avoir (se dédoubler, dormir 8 heures, retrouver une chaussette en 2 secondes…), puis le groupe vote pour le plus utile." },
+    11: { titre: "Jour 11", texte: "Le trophée du fail de la semaine : chacune raconte son plus beau ratage (lessive oubliée, gâteau cramé, rendez-vous manqué) et le groupe décerne un trophée imaginaire." },
+    12: { titre: "Jour 12", texte: "Montrer à quoi ressemble ton sapin et ta décoration de Noël." },
+    13: { titre: "Jour 13", texte: "La photo « avant / après » : poster la photo de la tête qu’on a le matin avant le café, et celle d’après. On vote pour la plus transformée." },
+    14: { titre: "Jour 14", texte: "Partages un livre ou une série que tu recommandes aux autres." },
+    15: { titre: "Jour 15", texte: "Défi gainage : tenir la planche le plus longtemps possible, avec le record de chacune." },
+    16: { titre: "Jour 16", texte: "Écrire une lettre à toi-même d’il y a 5 ans, avec un ou deux conseils." },
+    17: { titre: "Jour 17", texte: "Une recette de chocolat chaud, boisson d’hiver ou de gâteaux de Noël à partager." },
+    18: { titre: "Jour 18", texte: "Le défi imitation : chacune imite en vidéo ou en message vocal la voix qu’elle prend quand elle gronde ses enfants (ou son mari), et les autres devinent qui c’est." },
+    19: { titre: "Jour 19", texte: "Le CV improbable de maman : chacune écrit 3 « compétences » complètement absurdes et vraies de son quotidien (négociatrice professionnelle de brocolis, détective de doudous perdus, chauffeur VTC non rémunéré)." },
+    20: { titre: "Jour 20", texte: "Un défi grimace ou fou rire avec ses enfants." },
+    21: { titre: "Jour 21", texte: "Une chose gourmande à t’offrir cette semaine, sans culpabiliser." },
+    22: { titre: "Jour 22", texte: "La phrase la plus drôle dite par tes enfants cette semaine." },
+    23: { titre: "Jour 23", texte: "Une carte postale ou un petit mot manuscrit à envoyer à la maman de ton choix avant la fin de l'année." },
+    24: { titre: "Jour 24", texte: "Votre meilleure photo en famille avec les pulls de Noël et la totale devant les cadeaux et le sapin." }
   }
 };
