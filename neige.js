@@ -71,7 +71,7 @@
   function verifieToit() {                           // le chalet suit le décor : on déplace la neige du toit avec lui
     var r = VUE.rect;
     if (!r.width) { toit.ok = false; return; }
-    if (!toit.ok || Math.abs(r.width - toit.w) > 0.5) { miseEnPlaceToit(); return; }
+    if (!toit.ok || Math.abs(r.width - toit.w) > 0.15 * toit.w) { miseEnPlaceToit(); return; }
     var dx = r.left - toit.x0, dy = r.top - toit.top;
     if (dx || dy) {
       if (dy) { var s = toit.surf; for (var i = 0; i < s.length; i++) s[i] += dy; }
