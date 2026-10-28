@@ -184,7 +184,7 @@
     "  for(int i=0;i<4;i++){vec4 s=SP[i];float dx=px.x-s.x;dx-=uTex.x*floor(dx/uTex.x+.5);\n" +
     "   vec2 q=vec2(dx/s.z,(px.y-s.y)/s.w);float d=length(q);\n" +
     "   float core=1.-smoothstep(.55,1.15,d);float hal=exp(-length(vec2(dx/(s.z*4.),(px.y-s.y)/(s.w*10.))) *1.3);\n" +
-    "   c=mix(c,vec3(1.,.9,.5)*1.15,core*.96*sw);c+=vec3(1.,.72,.28)*hal*.34*sw;}}\n" +
+    "   c=mix(c,vec3(1.,.99,.96)*1.15,core*.96*sw);c+=vec3(1.,.97,.92)*hal*.26*sw;}}\n" +
     " c+=vec3(1.,.58,.2)*glow;\n" +
     " for(int t=0;t<2;t++){vec4 T=uTr[t];\n" +
     "  c+=guirlande(px,T,float(t)*101.);\n" +
