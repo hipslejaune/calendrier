@@ -484,14 +484,18 @@
   }
   window.dessinerTableau = function () { dessinerTableau(); };
   var grand = document.createElement("div"); grand.id = "tableau-grand"; grand.hidden = true;
-  grand.innerHTML = '<button type="button" class="tg-x" aria-label="Fermer">✕</button><canvas width="1800" height="1385"></canvas>'; document.body.appendChild(grand);
-  grand.addEventListener("click", function () { grand.hidden = true; });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") grand.hidden = true; });
+  grand.innerHTML = '<canvas width="1800" height="1385"></canvas>'; document.body.appendChild(grand);
+  var fermerTg = document.createElement("button"); fermerTg.type = "button"; fermerTg.id = "tg-fermer"; fermerTg.hidden = true;
+  fermerTg.innerHTML = "✕ Fermer"; document.body.appendChild(fermerTg);
+  function fermerTableau(e) { if (e) { e.stopPropagation(); e.preventDefault(); } grand.hidden = true; fermerTg.hidden = true; }
+  fermerTg.addEventListener("click", fermerTableau); fermerTg.addEventListener("pointerup", fermerTableau); fermerTg.addEventListener("touchend", fermerTableau);
+  grand.addEventListener("click", fermerTableau);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") fermerTableau(); });
   window.OUVRIR_TABLEAU = function () {
     var cv = grand.querySelector("canvas"), vertical = window.innerHeight > window.innerWidth * 0.9 || window.innerWidth < 700;
     cv.width = 1800; cv.height = 1385;
     dessinerTableau(cv, vertical ? 1 : 2);
-    grand.classList.toggle("vertical", vertical); grand.scrollTop = 0; grand.hidden = false;
+    grand.classList.toggle("vertical", vertical); grand.scrollTop = 0; grand.hidden = false; fermerTg.hidden = false;
   };
   setTimeout(dessinerTableau, 300); setTimeout(dessinerTableau, 1500);
   var nLutins = 0, tLutin = 0, ouvertA = {};
