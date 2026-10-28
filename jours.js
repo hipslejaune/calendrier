@@ -10,13 +10,10 @@ window.CALENDRIER = {
   // Ajouter ici le numéro du jour dès que ses deux images sont dans img/.
   fonds: [1],
 
-  // Musiques : une par jour, tirée au hasard dans cette liste (la même pour tout le monde
-  // un jour donné, jamais deux jours de suite la même). Pour en ajouter : déposer le .mp3
-  // dans audio/ et ajouter une ligne ici.
+  // Musique : une seule pour l'instant (elle tourne en boucle). Pour en remettre plusieurs : déposer les .mp3
+  // dans audio/ et les lister ici ; une sera alors tirée au hasard chaque jour, jamais la même deux jours de suite.
   musiques: [
-    "audio/pizzicato-du-festival-dhiver.mp3",
-    "audio/valse-de-la-bote-musique-enchante.mp3",
-    "audio/voyage-pixlis.mp3"
+    "audio/pizzicato-du-festival-dhiver.mp3"
   ],
 
   // Contenu derrière chaque fenêtre (clé = numéro du jour).
