@@ -88,6 +88,7 @@
     var dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
     var den = dx1 * dy2 - dy1 * dx2, g = (dx3 * dy2 - dy3 * dx2) / den, h = (dx1 * dy3 - dy1 * dx3) / den;
     var a = x1 - x0 + g * x1, b = x3 - x0 + h * x3, d = y1 - y0 + g * y1, e = y3 - y0 + h * y3;
+    V.hom = { a: a, b: b, c: x0, d: d, e: e, f: y0, g: g, h: h, W: W, H: H };
     chaletEl.style.transform = "matrix3d(" + [a / W, d / W, 0, g / W, b / H, e / H, 0, h / H, 0, 0, 1, 0, x0, y0, 0, 1].map(function (n) { return n.toFixed(6); }).join(",") + ")";
     var r = V.rect;                                       // rectangle équivalent (pour la neige du toit)
     r.left = (x0 + x3) / 2; r.width = ((x1 - x0) + (x2 - x3)) / 2; r.top = (y0 + y1) / 2; r.height = ((y3 + y2) / 2) - r.top;
@@ -244,6 +245,19 @@
     D: D, V: V, proj: proj, inv: inv,
     echelle: function () { return V.f * TAU / D.w; },                      // pixels d'écran par pixel du décor
     rect: V.rect,
+    // écran -> pixels du chalet (repère de l'élément), et inversement : pour la neige du toit
+    local: function (x, y) {
+      var m = V.hom; if (!m) return null;
+      var A = m.a - m.g * x, Bq = m.b - m.h * x, C = x - m.c, Dq = m.d - m.g * y, E = m.e - m.h * y, F = y - m.f;
+      var det = A * E - Bq * Dq; if (!det) return null;
+      return [((C * E - Bq * F) / det) * m.W, ((A * F - C * Dq) / det) * m.H];
+    },
+    ecranDe: function (px, py) {
+      var m = V.hom; if (!m) return null;
+      var u = px / m.W, w = py / m.H, den = m.g * u + m.h * w + 1;
+      return [(m.a * u + m.b * w + m.c) / den, (m.d * u + m.e * w + m.f) / den];
+    },
+    largeurLocale: function () { return V.hom ? V.hom.W : 0; },
     neige: function (canvas) { snowCanvas = canvas; snowSale = true; },
     sale: function () { snowSale = true; }
   };

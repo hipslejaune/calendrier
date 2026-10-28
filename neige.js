@@ -45,16 +45,21 @@
     img.src = el.currentSrc || el.src;
   }
 
+  // La neige du toit est dessinée dans un calque posé SUR le chalet (il subit la même déformation 3D que lui).
+  var rc = document.createElement("canvas"), rg = rc.getContext("2d");
+  rc.style.cssText = "position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3";
+  document.getElementById("chalet").appendChild(rc);
+  var toitW = 0, toitH = 0;
   function miseEnPlaceToit() {
-    var r = window.VUE && VUE.rect;
-    if (!r || !toit.profil) return;
-    if (!r.width || !r.height) return;
-    var pas = toit.pas, n = Math.ceil(r.width / pas), premiere = !toit.h || toit.n !== n;
+    var W0 = window.VUE ? VUE.largeurLocale() : 0;
+    if (!W0 || !toit.profil) return;
+    var H0 = W0 * 1541 / 1200;
+    var pas = toit.pas, n = Math.ceil(W0 / pas), premiere = !toit.h || toit.n !== n;
     var surf = new Float32Array(n), cap = new Float32Array(n), cw = toit.profil.length;
-    var k = r.width / 576;
+    var k = W0 / 576;
     for (var i = 0; i < n; i++) {
-      var idx = Math.min(cw - 1, Math.floor(((i + 0.5) * pas / r.width) * cw)), t = toit.profil[idx];
-      surf[i] = t < 0 ? NaN : r.top + t * r.height;
+      var idx = Math.min(cw - 1, Math.floor(((i + 0.5) * pas / W0) * cw)), t = toit.profil[idx];
+      surf[i] = t < 0 ? NaN : t * H0;
     }
     for (i = 0; i < n; i++) {                       // pente locale → épaisseur que la neige peut tenir
       var a = surf[Math.max(0, i - 3)], b = surf[Math.min(n - 1, i + 3)];
@@ -66,18 +71,15 @@
     if (premiere) { for (i = 0; i < n; i++) h[i] = cap[i] * 0.2; }     // un peu de neige dès l'arrivée
     else { for (i = 0; i < n; i++) h[i] = Math.min(toit.h[i], cap[i]); }
     toit.surf = surf; toit.cap = cap; toit.h = h; toit.n = n;
-    toit.x0 = r.left; toit.top = r.top; toit.w = r.width; toit.k = k; toit.ok = true;
+    toit.x0 = 0; toit.top = 0; toit.w = W0; toit.k = k; toit.ok = true;
+    toitW = W0; toitH = H0;
+    rc.width = Math.round(W0 * dpr); rc.height = Math.round(H0 * dpr);
   }
-  function verifieToit() {                           // le chalet suit le décor : on déplace la neige du toit avec lui
-    var r = VUE.rect;
-    if (!r.width) { toit.ok = false; return; }
-    if (!toit.ok || Math.abs(r.width - toit.w) > 0.15 * toit.w) { miseEnPlaceToit(); return; }
-    var dx = r.left - toit.x0, dy = r.top - toit.top;
-    if (dx || dy) {
-      if (dy) { var s = toit.surf; for (var i = 0; i < s.length; i++) s[i] += dy; }
-      toit.x0 = r.left; toit.top = r.top;
-    }
+  function verifieToit() {
+    var W0 = VUE.largeurLocale();
+    if (W0 && (!toit.ok || Math.abs(W0 - toit.w) > 0.5)) miseEnPlaceToit();
   }
+  function echelleToit() { return VUE.rect.width > 0 && toitW ? VUE.rect.width / toitW : 1; }   // pixels écran par pixel local
 
   function poser(ci, f) {                            // un flocon se pose sur le toit
     var apport = (26 + f.s * 7) * toit.k, h = toit.h, cap = toit.cap, n = toit.n;
@@ -96,37 +98,39 @@
     }
   }
   function dessinToit() {
-    var n = toit.n, pas = toit.pas, x0 = toit.x0, h = toit.h, surf = toit.surf, k = toit.k;
-    var bas = 2.5 * k, sous = [], i, run = false, debut = 0;
-    ctx.beginPath();
+    var c = rg, n = toit.n, pas = toit.pas, h = toit.h, surf = toit.surf, k = toit.k;
+    c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, toitW, toitH);
+    var bas = 2.5 * k, i, run = false, debut = 0;
+    c.beginPath();
     function fermer(fin) {
-      for (var j = fin; j >= debut; j--) ctx.lineTo(x0 + (j + 0.5) * pas, surf[j] + bas);
-      ctx.closePath();
+      for (var j = fin; j >= debut; j--) c.lineTo((j + 0.5) * pas, surf[j] + bas);
+      c.closePath();
     }
     for (i = 0; i < n; i++) {
       var ok = surf[i] === surf[i] && h[i] > 0.4;
       if (ok) {
-        var x = x0 + (i + 0.5) * pas, y = surf[i] - h[i];
-        if (!run) { run = true; debut = i; ctx.moveTo(x, surf[i] + bas); ctx.lineTo(x, y); }
-        else ctx.lineTo(x, y);
+        var x = (i + 0.5) * pas, y = surf[i] - h[i];
+        if (!run) { run = true; debut = i; c.moveTo(x, surf[i] + bas); c.lineTo(x, y); }
+        else c.lineTo(x, y);
       } else if (run) { run = false; fermer(i - 1); }
     }
     if (run) fermer(n - 1);
-    ctx.save();
-    ctx.shadowColor = "rgba(140,170,215,.65)"; ctx.shadowBlur = 5 * k;
-    ctx.fillStyle = "rgba(249,252,255,.98)";
-    ctx.fill();
-    ctx.restore();
+    c.save();
+    c.shadowColor = "rgba(140,170,215,.65)"; c.shadowBlur = 5 * k * dpr;
+    c.fillStyle = "rgba(249,252,255,.98)";
+    c.fill();
+    c.restore();
   }
 
   function chasseToit(dt, vxp, vyp) {                // le curseur balaie la neige du toit
-    var n = toit.n, pas = toit.pas, x0 = toit.x0, h = toit.h, surf = toit.surf, R = RAYON * 0.9;
+    var pl = VUE.local(ptr.x, ptr.y); if (!pl) return;
+    var sc = echelleToit(), n = toit.n, pas = toit.pas, h = toit.h, surf = toit.surf, R = RAYON * 0.9 / sc;
     var vit = Math.sqrt(vxp * vxp + vyp * vyp);
     for (var i = 0; i < n; i++) {
       if (!(h[i] > 0.05)) continue;
-      var px = x0 + (i + 0.5) * pas, dx = px - ptr.x;
+      var px = (i + 0.5) * pas, dx = px - pl[0];
       if (dx > R || dx < -R) continue;
-      var py = surf[i] - h[i], dy = py - ptr.y;
+      var py = surf[i] - h[i], dy = py - pl[1];
       if (dy > R || dy < -R) continue;
       var d = Math.sqrt(dx * dx + dy * dy);
       if (d >= R) continue;
@@ -135,9 +139,10 @@
       h[i] -= enleve; toit.acc += enleve * pas;
       while (toit.acc >= 9 && nTemp < MAX_TEMP) {
         toit.acc -= 9;
+        var sp = VUE.ecranDe(px + (Math.random() - 0.5) * pas, py - 1); if (!sp) continue;
         var dd = d || 1, s = Math.floor(Math.random() * 3);
         flocons.push({
-          x: px + (Math.random() - 0.5) * pas, y: py - 1, s: s, temp: true,
+          x: sp[0], y: sp[1], s: s, temp: true,
           vy: 26 + Math.random() * 20, amp: 3 + Math.random() * 6,
           freq: 0.6 + Math.random() * 0.9, ph: Math.random() * 6.283, alpha: 0.95,
           ox: (dx / dd) * (140 + Math.random() * 260) + vxp * 0.35,
@@ -385,15 +390,19 @@
         continue;
       }
 
-      if (toit.ok && f.y > yPrec) {                // un flocon qui tombe rencontre-t-il le toit ?
-        var ci = Math.floor((x - toit.x0) / toit.pas);
-        if (ci >= 0 && ci < toit.n && toit.surf[ci] === toit.surf[ci]) {
-          var sommet = toit.surf[ci] - toit.h[ci];
-          if (yPrec < sommet && f.y >= sommet) {
-            poser(ci, f);
-            if (f.temp) { flocons.splice(i, 1); i--; nTemp--; }
-            else { var m = nouveau(false); m.x = Math.random() * W; flocons[i] = m; }
-            continue;
+      var R0 = VUE.rect;
+      if (toit.ok && f.y > yPrec && R0.width && x > R0.left - 30 && x < R0.left + R0.width + 30 && f.y > R0.top - 30 && yPrec < R0.top + R0.height) {
+        var l1 = VUE.local(x, f.y), l0 = VUE.local(x, yPrec);       // un flocon qui tombe rencontre-t-il le toit ?
+        if (l1 && l0) {
+          var ci = Math.floor(l1[0] / toit.pas);
+          if (ci >= 0 && ci < toit.n && toit.surf[ci] === toit.surf[ci]) {
+            var sommet = toit.surf[ci] - toit.h[ci];
+            if (l0[1] < sommet && l1[1] >= sommet) {
+              poser(ci, f);
+              if (f.temp) { flocons.splice(i, 1); i--; nTemp--; }
+              else { var m = nouveau(false); m.x = Math.random() * W; flocons[i] = m; }
+              continue;
+            }
           }
         }
       }
