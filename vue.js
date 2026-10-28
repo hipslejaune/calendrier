@@ -175,6 +175,12 @@
     "  float inb=(1.-smoothstep(52.,78.,abs(fd.x)))*(1.-smoothstep(36.,56.,abs(px.y-822.)));\n" +
     "  c*=1.+inb*.21*fl;\n" +
     "  c+=vec3(1.,.5,.16)*(exp(-r/60.)*.5+exp(-r/150.)*.22+exp(-r/340.)*.14)*fl*.7*(.55+.45*inb+.45);}\n" +
+    " {const vec4 SP[4]=vec4[4](vec4(179.,501.,12.,3.6),vec4(96.,575.,7.,2.6),vec4(2683.,516.,11.,3.2),vec4(2770.,579.,7.,2.6));\n" +
+    "  float sw=.94+.06*sin(uT*1.7);\n" +
+    "  for(int i=0;i<4;i++){vec4 s=SP[i];float dx=px.x-s.x;dx-=uTex.x*floor(dx/uTex.x+.5);\n" +
+    "   vec2 q=vec2(dx/s.z,(px.y-s.y)/s.w);float d=length(q);\n" +
+    "   float core=1.-smoothstep(.55,1.15,d);float hal=exp(-length(vec2(dx/(s.z*4.),(px.y-s.y)/(s.w*10.))) *1.3);\n" +
+    "   c=mix(c,vec3(1.,.9,.5)*1.15,core*.96*sw);c+=vec3(1.,.72,.28)*hal*.34*sw;}}\n" +
     " c+=vec3(1.,.58,.2)*glow;\n" +
     " for(int t=0;t<2;t++){vec4 T=uTr[t];\n" +
     "  c+=guirlande(px,T,float(t)*101.);\n" +
