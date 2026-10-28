@@ -167,9 +167,13 @@
     " vec2 uv=vec2((px.x+sh.x)/uTex.x,(px.y+sh.y)/uTex.y);\n" +
     " vec3 c=textureGrad(uBg,uv,dX,dY).rgb;\n" +
     " if(uLmOn>.5){vec2 lp=vec2(px.x-uLr.x,px.y-uLr.y)/uLr.zw;\n" +
-    "  if(lp.x>=0.&&lp.x<=1.&&lp.y>=0.&&lp.y<=1.){vec4 s=texture(uLm,lp);float ph=s.g*255.;\n" +
-    "   float tw=.5+.5*sin(uT*(1.6+hsh(ph)*2.2)+ph*3.7);tw=smoothstep(.2,.95,tw);\n" +
-    "   c+=vec3(1.,.82,.5)*s.r*tw*.42;}}\n" +
+    "  if(lp.x>=0.&&lp.x<=1.&&lp.y>=0.&&lp.y<=1.){vec3 add=vec3(0.);\n" +
+    "   for(int i=0;i<5;i++){vec2 o=i==0?vec2(0.):(i==1?vec2(1.,0.):(i==2?vec2(-1.,0.):(i==3?vec2(0.,1.):vec2(0.,-1.))));\n" +
+    "    vec4 s=texture(uLm,lp+o*3./uLr.zw);float ph=s.g*255.;float w=i==0?1.:.45;\n" +
+    "    float tw=.5+.5*sin(uT*(1.6+hsh(ph)*2.2)+ph*3.7);tw=smoothstep(.15,.9,tw);\n" +
+    "    add+=vec3(1.,.8,.42)*s.r*w*(.1+tw*1.1);}\n" +
+    "   c+=add*.85;}}\n" +
+
     " {float fl=.5+.3*sin(uT*.62)+.2*sin(uT*1.14+1.3)+.12*sin(uT*1.86+.4)+.08*sin(uT*2.8);\n" +
     "  vec2 fd=vec2(px.x-1520.,px.y-815.);float r=length(fd*vec2(1.,1.2));\n" +
     "  float inb=(1.-smoothstep(52.,78.,abs(fd.x)))*(1.-smoothstep(36.,56.,abs(px.y-822.)));\n" +
