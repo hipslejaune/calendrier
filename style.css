@@ -9,29 +9,10 @@ html,body{
 }
 img{-webkit-user-drag:none;user-drag:none}
 
-/* ---------- Scène : le fond est recadré « cover », le chalet suit le même cadre ---------- */
-#scene{position:fixed;inset:0;overflow:hidden}
-#stage{
-  --ar:1.7778;
-  position:absolute;left:50%;top:50%;
-  width:max(100vw,calc(100vh*var(--ar)));
-  height:max(100vh,calc(100vw/var(--ar)));
-  transform:translate(-50%,-50%);container-type:inline-size;
-}
-@supports (height:100dvh){
-  #stage{
-    width:max(100vw,calc(100dvh*var(--ar)));
-    height:max(100dvh,calc(100vw/var(--ar)));
-  }
-}
-#fond{position:absolute;inset:0;background:var(--nuit) var(--img-d) center/100% 100% no-repeat}
-/* Portrait : on garde l'image du PC, plus large que l'écran. Le téléphone pivote = panoramique (voir app.js) */
-@media (orientation:portrait){
-  #stage{--ar:1.7778;left:0;top:0;width:calc(100vh*var(--ar));height:100vh;transform:translate3d(var(--tx,0px),0,0)}
-  @supports (height:100dvh){#stage{width:calc(100dvh*var(--ar));height:100dvh}}
-}
-
-#flammes{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+/* ---------- Scène : décor 360° en WebGL, le chalet est posé dessus ---------- */
+#scene{position:fixed;inset:0;overflow:hidden;background:var(--nuit)}
+#vue{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+body.glisse #vue{cursor:grabbing}
 
 /* ---------- Titre ---------- */
 .titre{
@@ -42,19 +23,10 @@ img{-webkit-user-drag:none;user-drag:none}
 }
 .titre em{font-style:normal;color:var(--or);font-weight:700}
 
-/* ---------- Chalet posé sur le meuble ---------- */
+/* ---------- Chalet posé sur le meuble (position et taille données par vue.js) ---------- */
 #chalet{
-  position:absolute;aspect-ratio:1200/1541;
-  left:calc(var(--cx)*1%);bottom:calc((100 - var(--by))*1%);
-  width:var(--cw);transform:translateX(-50%);container-type:inline-size;
-}
-/* Paysage : sur la partie droite du meuble */
-#chalet{--cx:56;--by:72;--cw:min(30cqw,54vh)}
-/* Portrait : centré sur le meuble */
-@media (orientation:portrait){#chalet{--cx:56;--by:72;--cw:min(30cqw,96vw)}}
-@supports (height:100dvh){
-  #chalet{--cw:min(30cqw,54dvh)}
-  @media (orientation:portrait){#chalet{--cw:min(30cqw,96vw)}}
+  position:absolute;left:0;top:0;aspect-ratio:1200/1541;width:40vw;
+  transform-origin:50% 100%;container-type:inline-size;will-change:transform;
 }
 #chalet-img{
   position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;
@@ -224,9 +196,9 @@ img{-webkit-user-drag:none;user-drag:none}
   .porte.aujourdhui:not(.ouverte)::after,.carte-boite,.porte.refus,.cheminee.ouverte .fumee i{animation:none}
 }
 
-/* Bouton panorama (portrait uniquement) */
+/* Bouton gyroscope / recentrage (téléphones) */
 #pano{display:none}
-@media (orientation:portrait){
+@media (pointer:coarse){
   #pano{
     position:fixed;left:max(.8rem,env(safe-area-inset-left));bottom:max(.8rem,env(safe-area-inset-bottom));z-index:20;
     display:grid;place-items:center;width:2.6rem;height:2.6rem;border-radius:50%;cursor:pointer;padding:0;
@@ -234,8 +206,4 @@ img{-webkit-user-drag:none;user-drag:none}
   }
   #pano svg{width:1.4rem;height:1.4rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   #pano.actif{background:rgba(233,196,106,.28)}
-}
-@media (orientation:portrait){
-  #neige{inset:auto;left:0;top:0;width:calc(100vh*1.7778);height:100vh;transform:translate3d(var(--tx,0px),0,0)}
-  @supports (height:100dvh){#neige{width:calc(100dvh*1.7778);height:100dvh}}
 }

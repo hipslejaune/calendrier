@@ -45,14 +45,9 @@
     img.src = el.currentSrc || el.src;
   }
 
-  function rel(el) {                                 // rectangle d'un élément, relatif au canevas (qui peut être décalé en panorama)
-    var r = el.getBoundingClientRect(), o = canvas.getBoundingClientRect();
-    return { left: r.left - o.left, top: r.top - o.top, right: r.right - o.left, bottom: r.bottom - o.top, width: r.width, height: r.height };
-  }
   function miseEnPlaceToit() {
-    var el = document.getElementById("chalet");
-    if (!el || !toit.profil) return;
-    var r = rel(el);
+    var r = window.VUE && VUE.rect;
+    if (!r || !toit.profil) return;
     if (!r.width || !r.height) return;
     var pas = toit.pas, n = Math.ceil(r.width / pas), premiere = !toit.h || toit.n !== n;
     var surf = new Float32Array(n), cap = new Float32Array(n), cw = toit.profil.length;
@@ -73,10 +68,15 @@
     toit.surf = surf; toit.cap = cap; toit.h = h; toit.n = n;
     toit.x0 = r.left; toit.top = r.top; toit.w = r.width; toit.k = k; toit.ok = true;
   }
-  function verifieToit() {                           // le chalet a-t-il bougé (redimensionnement) ?
-    var el = document.getElementById("chalet"); if (!el) return;
-    var r = rel(el);
-    if (Math.abs(r.left - toit.x0) > 0.5 || Math.abs(r.top - toit.top) > 0.5 || Math.abs(r.width - toit.w) > 0.5) { miseEnPlaceToit(); placerZones(); }
+  function verifieToit() {                           // le chalet suit le décor : on déplace la neige du toit avec lui
+    var r = VUE.rect;
+    if (!r.width) { toit.ok = false; return; }
+    if (!toit.ok || Math.abs(r.width - toit.w) > 0.5) { miseEnPlaceToit(); return; }
+    var dx = r.left - toit.x0, dy = r.top - toit.top;
+    if (dx || dy) {
+      if (dy) { var s = toit.surf; for (var i = 0; i < s.length; i++) s[i] += dy; }
+      toit.x0 = r.left; toit.top = r.top;
+    }
   }
 
   function poser(ci, f) {                            // un flocon se pose sur le toit
@@ -150,23 +150,11 @@
   }
 
 
-  /* ---------- Meuble et petit sapin : neige qui se dépose sur le décor ---------- */
-  // Zones dessinées sur l'image de fond (coordonnées en pixels de img/jour-01-desktop.webp, 2400 x 1350).
-  var ARBRE_ENV = [[75,322],[88,290],[98,232],[105,192],[120,168],[135,150],[150,128],[165,100],[176,62],[185,25],
-                   [195,58],[210,98],[225,118],[238,130],[246,170],[258,225],[272,240],[282,300],[290,325]];
-  var ZONES_PAYSAGE = {
-    w: 2400, h: 1350,
-    zones: [
-      { nom: "meuble", chalet: true, budget: 3.6, rx: 1.9, ry: 0.85, a: [0.45, 0.75],
-        pts: [[2398,768],[2371,768],[2354,762],[2333,722],[2321,712],[2301,704],[2274,701],[2253,711],[2245,718],[2195,718],[2193,709],[2181,703],[2184,602],[2176,592],[2174,507],[2153,489],[2155,403],[2123,361],[2120,333],[2111,321],[2096,307],[2078,303],[2070,308],[2070,358],[2055,384],[2038,386],[2038,421],[2013,424],[1994,438],[1993,498],[1986,511],[1986,528],[1976,536],[1976,569],[1953,571],[1948,577],[1951,606],[1976,629],[1976,681],[1971,688],[1970,702],[1911,702],[1900,714],[1850,714],[1846,699],[1796,694],[1791,726],[1774,729],[1714,729],[1709,738],[1708,776],[1648,776],[1646,739],[1643,739],[1640,766],[1644,768],[1644,818],[1639,821],[1483,833],[1450,843],[1410,849],[1393,857],[1324,868],[1264,868],[1260,849],[1198,849],[1195,883],[1079,888],[991,914],[960,914],[930,918],[929,922],[960,924],[1036,952],[1162,986],[1225,993],[1349,1024],[1394,1039],[1395,1066],[1574,1066],[1574,1041],[1585,1036],[1630,1033],[1704,1011],[1798,994],[1850,974],[1910,959],[2095,926],[2369,861],[2398,861]] }
-    ]
-  };
-  // En portrait le chalet cache entièrement le dessus du meuble : pas de zone.
-  var ZONES_PORTRAIT = { w: 1080, h: 1920, zones: [] };
-
+  /* ---------- Meuble et petits sapins : neige dans le repère du décor 360° ----------
+     Les zones et le calque `tas` sont en pixels du décor (u - U0, v - V0) : ils suivent l'image quand on tourne. */
+  var DEC = window.DECOR, REG = DEC.region, CELL = 8, SC = 0.6;
   var tas = document.createElement("canvas"), tg = tas.getContext("2d");
-  var zones = [], cov = null, covZ = null, CELL = 16, covW = 0, covH = 0, accTas = 0;
-  var spriteBlob = null;
+  var zones = [], cov = null, covZ = null, covW = 0, covH = 0, accTas = 0, spriteBlob = null;
 
   function faitBlob() {
     var c = document.createElement("canvas"); c.width = c.height = 64;
@@ -189,78 +177,72 @@
     }
     return lo === Infinity ? null : [lo, hi];
   }
-  function aire(pts) {
-    var s = 0, n = pts.length;
-    for (var i = 0; i < n; i++) { var a = pts[i], b = pts[(i + 1) % n]; s += a[0] * b[1] - b[0] * a[1]; }
-    return Math.abs(s) / 2;
+  function reg(a, b) { return ((a % b) + b) % b; }
+  function monde(x, y) {                               // écran -> (colonne du calque, ligne du décor)
+    var p = VUE.inv(x, y); return [reg(p[0] - REG.U0, DEC.w), p[1]];
   }
 
   function placerZones() {
-    var fond = document.getElementById("fond"), ch = document.getElementById("chalet");
     zones = [];
-    tas.width = Math.round(W * dpr); tas.height = Math.round(H * dpr);
-    tg.setTransform(dpr, 0, 0, dpr, 0, 0);
-    covW = Math.ceil(W / CELL); covH = Math.ceil(H / CELL);
+    tas.width = REG.RW; tas.height = REG.RH;
+    tg.setTransform(1, 0, 0, 1, 0, 0);
+    covW = Math.ceil(REG.RW / CELL); covH = Math.ceil(REG.RH / CELL);
     cov = new Float32Array(covW * covH); covZ = new Uint8Array(covW * covH); accTas = 0;
-    if (!fond) return;
-    var fr = rel(fond); if (!fr.width) return;
-    var cfg = ZONES_PAYSAGE;
-    var sx = fr.width / cfg.w, sy = fr.height / cfg.h, sc = fr.width / 1920;
-    var cr = ch ? rel(ch) : null;
-
-    cfg.zones.forEach(function (zc) {
-      var pts = zc.pts.map(function (q) { return [fr.left + q[0] * sx, fr.top + q[1] * sy]; });
-      var pas = 4, xs = pts.map(function (q) { return q[0]; });
+    var ch = DEC.chalet, cx = reg(ch.u - REG.U0, DEC.w), demi = ch.larg / 360 * DEC.w / 2;
+    DEC.zones.forEach(function (zc) {
+      var pts = zc.pts, pas = 4, xs = pts.map(function (q) { return q[0]; });
       var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
       var n = Math.ceil((x1 - x0) / pas), top = new Float32Array(n), bot = new Float32Array(n);
       for (var i = 0; i < n; i++) {
-        var t = tranche(pts, x0 + (i + 0.5) * pas);
+        var xx = x0 + (i + 0.5) * pas, t = tranche(pts, xx);
         if (!t) { top[i] = NaN; bot[i] = NaN; continue; }
         top[i] = t[0]; bot[i] = t[1];
-        if (zc.chalet && cr) {                         // le chalet cache ce qui est derrière lui
-          var xx = x0 + (i + 0.5) * pas;
-          if (xx > cr.left - 4 && xx < cr.right + 4) top[i] = Math.max(top[i], cr.bottom - 2);
-        }
+        if (zc.chalet && Math.abs(xx - cx) < demi + 4) top[i] = Math.max(top[i], ch.vBase - 2);   // le chalet cache ce qui est derrière lui
         if (bot[i] - top[i] < 3) { top[i] = NaN; bot[i] = NaN; }
       }
-      var rBase = 3.6 * sc, moyen = Math.PI * zc.rx * zc.ry * rBase * rBase;
+      var rBase = 3.6 * SC, moyen = Math.PI * zc.rx * zc.ry * rBase * rBase;
       var surface = 0; for (i = 0; i < n; i++) if (top[i] === top[i]) surface += (bot[i] - top[i]) * pas;
       zones.push({ nom: zc.nom, x0: x0, pas: pas, n: n, top: top, bot: bot, rx: zc.rx, ry: zc.ry, a: zc.a,
-                   sc: sc, nb: 0, max: Math.max(10, zc.budget * surface / moyen), moyenBlob: moyen });
+                   sc: SC, nb: 0, max: Math.max(10, zc.budget * surface / moyen), moyenBlob: moyen });
     });
-    // un peu de neige dès l'arrivée
-    zones.forEach(function (z, zi) {
-      var k = Math.floor(z.max * 0.5);
+    zones.forEach(function (z, zi) {                   // un peu de neige dès l'arrivée
+      var k = Math.floor(z.max * 0.3);
       for (var j = 0; j < k; j++) {
         var i = Math.floor(Math.random() * z.n); if (!(z.top[i] === z.top[i])) continue;
         poserTas(zi, z.x0 + (i + 0.5) * z.pas + (Math.random() - 0.5) * z.pas,
                  z.top[i] + Math.random() * (z.bot[i] - z.top[i]), 1 + Math.floor(Math.random() * 4));
       }
     });
+    VUE.neige(tas);
   }
 
-  function poserTas(zi, x, y, s) {                     // un flocon s'ajoute au tas de neige
+  function poserTas(zi, x, v, s) {                     // un flocon s'ajoute au tas de neige (x, v : repère du décor)
     var z = zones[zi]; if (z.nb >= z.max) return;
+    var y = v - REG.V0;
     var r = (2 + s * 0.8) * z.sc, rx = r * z.rx, ry = r * z.ry;
     tg.globalAlpha = z.a[0] + Math.random() * (z.a[1] - z.a[0]);
     tg.drawImage(spriteBlob, x - rx, y - ry, rx * 2, ry * 2);
     tg.globalAlpha = 1;
-    z.nb++;
+    z.nb++; VUE.sale();
     var cx = Math.floor(x / CELL), cy = Math.floor(y / CELL);
     if (cx >= 0 && cx < covW && cy >= 0 && cy < covH) { cov[cy * covW + cx] += 1; covZ[cy * covW + cx] = zi; }
   }
 
-  function chasseTas(dt, vit, vxp, vyp) {              // le curseur balaie la neige du meuble et du sapin
-    var R = RAYON * 0.6, ry = R * 0.8;
+  function chasseTas(dt, vit, vxp, vyp) {              // le curseur balaie la neige du meuble et des sapins
+    var m0 = monde(ptr.x, ptr.y), k = VUE.echelle();
+    var px = m0[0], py = m0[1] - REG.V0;
+    var R = RAYON * 0.6 / k, ry = R * 0.8;
+    if (px < -R || px > REG.RW + R || py < -ry || py > REG.RH + ry) return;
     tg.globalCompositeOperation = "destination-out";
     tg.globalAlpha = Math.min(0.9, 0.14 + vit * 0.0007);
-    tg.drawImage(spriteBlob, ptr.x - R, ptr.y - ry, R * 2, ry * 2);
+    tg.drawImage(spriteBlob, px - R, py - ry, R * 2, ry * 2);
     tg.globalCompositeOperation = "source-over"; tg.globalAlpha = 1;
-    var cx0 = Math.max(0, Math.floor((ptr.x - R) / CELL)), cx1 = Math.min(covW - 1, Math.floor((ptr.x + R) / CELL));
-    var cy0 = Math.max(0, Math.floor((ptr.y - ry) / CELL)), cy1 = Math.min(covH - 1, Math.floor((ptr.y + ry) / CELL));
+    VUE.sale();
+    var cx0 = Math.max(0, Math.floor((px - R) / CELL)), cx1 = Math.min(covW - 1, Math.floor((px + R) / CELL));
+    var cy0 = Math.max(0, Math.floor((py - ry) / CELL)), cy1 = Math.min(covH - 1, Math.floor((py + ry) / CELL));
     for (var cy = cy0; cy <= cy1; cy++) for (var cx = cx0; cx <= cx1; cx++) {
       var c = cy * covW + cx, v = cov[c]; if (v <= 0) continue;
-      var mx = (cx + 0.5) * CELL - ptr.x, my = ((cy + 0.5) * CELL - ptr.y) / 0.8, d = Math.sqrt(mx * mx + my * my);
+      var mx = (cx + 0.5) * CELL - px, my = ((cy + 0.5) * CELL - py) / 0.8, d = Math.sqrt(mx * mx + my * my);
       if (d > R) continue;
       var pris = Math.min(v, v * 0.3 + 0.06);
       cov[c] -= pris; accTas += pris;
@@ -268,9 +250,11 @@
       while (accTas >= 1) {
         accTas -= 1;
         if (nTemp >= MAX_TEMP) continue;
+        var sp = VUE.proj(REG.U0 + (cx + Math.random()) * CELL, REG.V0 + (cy + Math.random()) * CELL);
+        if (!sp) continue;
         var dd = d || 1;
         flocons.push({
-          x: (cx + Math.random()) * CELL, y: (cy + Math.random()) * CELL, s: Math.floor(Math.random() * 3), temp: true,
+          x: sp[0], y: sp[1], s: Math.floor(Math.random() * 3), temp: true,
           vy: 26 + Math.random() * 20, amp: 3 + Math.random() * 6, freq: 0.6 + Math.random() * 0.9, ph: Math.random() * 6.283,
           alpha: 0.95, ox: (mx / dd) * (110 + Math.random() * 240) + vxp * 0.35,
           oy: (my / dd) * 60 - 50 - Math.random() * 160 + vyp * 0.2
@@ -319,30 +303,28 @@
 
   function taille() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = canvas.clientWidth || window.innerWidth; H = canvas.clientHeight || window.innerHeight;
+    W = window.innerWidth; H = window.innerHeight;
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     fabriqueSprites();
-    var n = Math.round(Math.max(220, Math.min(W > window.innerWidth * 1.3 ? 1100 : 750, (W * H) / 2600)));
+    var n = Math.round(Math.max(220, Math.min(750, (W * H) / 2600)));
     if (reduit) n = Math.round(n / 3);
     var base = flocons.filter(function (f) { return !f.temp; });
     while (base.length < n) base.push(nouveau(true));
     base.length = n;
     flocons = base; nTemp = 0;
     miseEnPlaceToit();
-    placerZones();
   }
 
   function pointeur(e) {
     var t = e.timeStamp || performance.now();
     if (ptr.actif && ptr.t && t > ptr.t) {            // vitesse du curseur : il « souffle » les flocons
       var d = Math.max(8, t - ptr.t) / 1000;
-      ptr.vx = ptr.vx * 0.5 + ((e.clientX - canvas.getBoundingClientRect().left - ptr.x) / d) * 0.5;
+      ptr.vx = ptr.vx * 0.5 + ((e.clientX - ptr.x) / d) * 0.5;
       ptr.vy = ptr.vy * 0.5 + ((e.clientY - ptr.y) / d) * 0.5;
     }
-    var ox = canvas.getBoundingClientRect().left, cx = e.clientX - ox;
-    ptr.t = t; ptr.x = cx; ptr.y = e.clientY; ptr.actif = true;
+    ptr.t = t; ptr.x = e.clientX; ptr.y = e.clientY; ptr.actif = true;
   }
   window.addEventListener("pointermove", pointeur, { passive: true });
   window.addEventListener("pointerdown", pointeur, { passive: true });
@@ -363,12 +345,9 @@
     var vd = Math.exp(-6 * dt); ptr.vx *= vd; ptr.vy *= vd;
     var vmax = 1400, vxp = Math.max(-vmax, Math.min(vmax, ptr.vx)), vyp = Math.max(-vmax, Math.min(vmax, ptr.vy));
 
-    if (now > prochaineVerif) { prochaineVerif = now + 600; verifieToit(); }
+    verifieToit();
     var vit = Math.sqrt(vxp * vxp + vyp * vyp);
-    if (zones.length) {
-      if (ptr.actif) chasseTas(dt, vit, vxp, vyp);
-      ctx.drawImage(tas, 0, 0, W, H);
-    }
+    if (zones.length && ptr.actif) chasseTas(dt, vit, vxp, vyp);
     if (toit.ok) {
       if (ptr.actif) chasseToit(dt, vxp, vyp);
       lisse();
@@ -419,25 +398,27 @@
         }
       }
 
-      if (zones.length) {                          // le flocon se pose-t-il sur le meuble ou le sapin ?
-        var zi, z, zc, pose = false;
+      if (zones.length) {                          // le flocon se pose-t-il sur le meuble ou un sapin ?
+        var zi, z, zc, pose = false, w1 = null;
         if (f.yl !== undefined) {
-          z = zones[f.zi]; zc = z ? Math.floor((x - z.x0) / z.pas) : -1;
+          w1 = monde(x, f.y); z = zones[f.zi]; zc = Math.floor((w1[0] - z.x0) / z.pas);
           if (zc < 0 || zc >= z.n || !(z.top[zc] === z.top[zc])) f.yl = undefined;
-          else if (f.y >= f.yl) pose = true;
+          else if (w1[1] >= f.yl) pose = true;
         } else if (f.y > yPrec) {
+          w1 = monde(x, f.y);
+          var w0 = monde(x, yPrec);
           for (zi = 0; zi < zones.length; zi++) {
-            z = zones[zi]; zc = Math.floor((x - z.x0) / z.pas);
+            z = zones[zi]; zc = Math.floor((w1[0] - z.x0) / z.pas);
             if (zc < 0 || zc >= z.n || !(z.top[zc] === z.top[zc])) continue;
-            if (yPrec < z.top[zc] && f.y >= z.top[zc]) {
+            if (w0[1] < z.top[zc] && w1[1] >= z.top[zc]) {
               f.zi = zi; f.yl = z.top[zc] + (z.bot[zc] - z.top[zc]) * Math.random();
-              if (f.y >= f.yl) pose = true;
+              if (w1[1] >= f.yl) pose = true;
               break;
             }
           }
         }
         if (pose) {
-          poserTas(f.zi, x, f.yl, f.s);
+          poserTas(f.zi, w1[0], f.yl, f.s);
           if (f.temp) { flocons.splice(i, 1); i--; nTemp--; }
           else { var m2 = nouveau(false); m2.x = Math.random() * W; flocons[i] = m2; }
           continue;
@@ -454,6 +435,7 @@
 
   window.addEventListener("resize", taille);
   taille();
+  placerZones();
   chargeProfil();
   requestAnimationFrame(function (n) { dernier = n; image(n); });
 })();

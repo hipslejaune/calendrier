@@ -19,3 +19,10 @@ ou du doigt, halo de lumière et grincement à l'ouverture, une musique en boucl
 ## Particularités du chalet
 L'image n'a que 23 portes (deux « 18 », ni 3 ni 12) : la petite fenêtre carrée du bas porte le n° 12 (numéro recouvert)
 et la cheminée sert de case n° 3.
+
+
+## Décor 360° (depuis le 28/10)
+- Chaque jour a un décor équirectangulaire 2:1 (ex. `img/fond-360.webp`), configuré dans `jours.js` → `decors[n]` (vue de départ, position du chalet, zones de neige, flammes).
+- `vue.js` : affichage WebGL du 360°. Téléphone : gyroscope (le doigt ne déplace pas l'image). PC : clic-glisser ou flèches.
+- La neige du meuble et des sapins est dessinée dans le repère de l'image 360° et suit le décor ; la neige du toit suit le chalet.
+- Les flammes vacillent dans le shader (liste `flammes` : [u, v, demi-largeur, demi-hauteur] en pixels de l'image).
