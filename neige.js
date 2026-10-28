@@ -72,7 +72,7 @@
   function verifieToit() {                           // le chalet a-t-il bougé (redimensionnement) ?
     var el = document.getElementById("chalet"); if (!el) return;
     var r = el.getBoundingClientRect();
-    if (Math.abs(r.left - toit.x0) > 0.5 || Math.abs(r.top - toit.top) > 0.5 || Math.abs(r.width - toit.w) > 0.5) miseEnPlaceToit();
+    if (Math.abs(r.left - toit.x0) > 0.5 || Math.abs(r.top - toit.top) > 0.5 || Math.abs(r.width - toit.w) > 0.5) { miseEnPlaceToit(); placerZones(); }
   }
 
   function poser(ci, f) {                            // un flocon se pose sur le toit
@@ -145,6 +145,141 @@
     }
   }
 
+
+  /* ---------- Meuble et petit sapin : neige qui se dépose sur le décor ---------- */
+  // Zones dessinées sur l'image de fond (coordonnées en pixels de img/jour-01-desktop.webp, 2400 x 1350).
+  var ARBRE_ENV = [[75,322],[88,290],[98,232],[105,192],[120,168],[135,150],[150,128],[165,100],[176,62],[185,25],
+                   [195,58],[210,98],[225,118],[238,130],[246,170],[258,225],[272,240],[282,300],[290,325]];
+  var ZONES_PAYSAGE = {
+    w: 2400, h: 1350,
+    zones: [
+      { nom: "meuble", chalet: true, budget: 1.5, rx: 2.4, ry: 0.95, a: [0.28, 0.46],
+        pts: [[935,928],[1200,892],[1500,840],[1700,822],[1900,840],[2150,860],[2400,845],[2400,932],
+              [2150,965],[1900,1002],[1700,1018],[1470,1042],[960,962]] },
+      { nom: "arbre", budget: 1.1, rx: 1.3, ry: 1.1, a: [0.55, 0.85],
+        pts: ARBRE_ENV.map(function (q) { return [1900 + q[0], 280 + q[1]]; })
+                 .concat(ARBRE_ENV.slice().reverse().map(function (q) { return [1900 + q[0], 280 + q[1] + 34]; })) }
+    ]
+  };
+  // En portrait le chalet cache entièrement le dessus du meuble : pas de zone.
+  var ZONES_PORTRAIT = { w: 1080, h: 1920, zones: [] };
+
+  var tas = document.createElement("canvas"), tg = tas.getContext("2d");
+  var zones = [], cov = null, covZ = null, CELL = 16, covW = 0, covH = 0, accTas = 0;
+  var spriteBlob = null;
+
+  function faitBlob() {
+    var c = document.createElement("canvas"); c.width = c.height = 64;
+    var g = c.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.45, "rgba(250,252,255,.85)");
+    gr.addColorStop(1, "rgba(250,252,255,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    return c;
+  }
+  spriteBlob = faitBlob();
+
+  function tranche(pts, x) {                          // y mini et maxi du polygone à la verticale de x
+    var lo = Infinity, hi = -Infinity, n = pts.length;
+    for (var i = 0; i < n; i++) {
+      var a = pts[i], b = pts[(i + 1) % n];
+      if ((a[0] <= x && b[0] > x) || (b[0] <= x && a[0] > x)) {
+        var y = a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]);
+        if (y < lo) lo = y; if (y > hi) hi = y;
+      }
+    }
+    return lo === Infinity ? null : [lo, hi];
+  }
+  function aire(pts) {
+    var s = 0, n = pts.length;
+    for (var i = 0; i < n; i++) { var a = pts[i], b = pts[(i + 1) % n]; s += a[0] * b[1] - b[0] * a[1]; }
+    return Math.abs(s) / 2;
+  }
+
+  function placerZones() {
+    var fond = document.getElementById("fond"), ch = document.getElementById("chalet");
+    zones = [];
+    tas.width = Math.round(W * dpr); tas.height = Math.round(H * dpr);
+    tg.setTransform(dpr, 0, 0, dpr, 0, 0);
+    covW = Math.ceil(W / CELL); covH = Math.ceil(H / CELL);
+    cov = new Float32Array(covW * covH); covZ = new Uint8Array(covW * covH); accTas = 0;
+    if (!fond) return;
+    var fr = fond.getBoundingClientRect(); if (!fr.width) return;
+    var cfg = window.matchMedia && matchMedia("(orientation: portrait)").matches ? ZONES_PORTRAIT : ZONES_PAYSAGE;
+    var sx = fr.width / cfg.w, sy = fr.height / cfg.h, sc = fr.width / 1920;
+    var cr = ch ? ch.getBoundingClientRect() : null;
+
+    cfg.zones.forEach(function (zc) {
+      var pts = zc.pts.map(function (q) { return [fr.left + q[0] * sx, fr.top + q[1] * sy]; });
+      var pas = 4, xs = pts.map(function (q) { return q[0]; });
+      var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+      var n = Math.ceil((x1 - x0) / pas), top = new Float32Array(n), bot = new Float32Array(n);
+      for (var i = 0; i < n; i++) {
+        var t = tranche(pts, x0 + (i + 0.5) * pas);
+        if (!t) { top[i] = NaN; bot[i] = NaN; continue; }
+        top[i] = t[0]; bot[i] = t[1];
+        if (zc.chalet && cr) {                         // le chalet cache ce qui est derrière lui
+          var xx = x0 + (i + 0.5) * pas;
+          if (xx > cr.left - 4 && xx < cr.right + 4) top[i] = Math.max(top[i], cr.bottom - 2);
+        }
+        if (bot[i] - top[i] < 3) { top[i] = NaN; bot[i] = NaN; }
+      }
+      var rBase = 3.6 * sc, moyen = Math.PI * zc.rx * zc.ry * rBase * rBase;
+      var surface = 0; for (i = 0; i < n; i++) if (top[i] === top[i]) surface += (bot[i] - top[i]) * pas;
+      zones.push({ nom: zc.nom, x0: x0, pas: pas, n: n, top: top, bot: bot, rx: zc.rx, ry: zc.ry, a: zc.a,
+                   sc: sc, nb: 0, max: Math.max(10, zc.budget * surface / moyen), moyenBlob: moyen });
+    });
+    // un peu de neige dès l'arrivée
+    zones.forEach(function (z, zi) {
+      var k = Math.floor(z.max * 0.22);
+      for (var j = 0; j < k; j++) {
+        var i = Math.floor(Math.random() * z.n); if (!(z.top[i] === z.top[i])) continue;
+        poserTas(zi, z.x0 + (i + 0.5) * z.pas + (Math.random() - 0.5) * z.pas,
+                 z.top[i] + Math.random() * (z.bot[i] - z.top[i]), 1 + Math.floor(Math.random() * 4));
+      }
+    });
+  }
+
+  function poserTas(zi, x, y, s) {                     // un flocon s'ajoute au tas de neige
+    var z = zones[zi]; if (z.nb >= z.max) return;
+    var r = (2 + s * 0.8) * z.sc, rx = r * z.rx, ry = r * z.ry;
+    tg.globalAlpha = z.a[0] + Math.random() * (z.a[1] - z.a[0]);
+    tg.drawImage(spriteBlob, x - rx, y - ry, rx * 2, ry * 2);
+    tg.globalAlpha = 1;
+    z.nb++;
+    var cx = Math.floor(x / CELL), cy = Math.floor(y / CELL);
+    if (cx >= 0 && cx < covW && cy >= 0 && cy < covH) { cov[cy * covW + cx] += 1; covZ[cy * covW + cx] = zi; }
+  }
+
+  function chasseTas(dt, vit, vxp, vyp) {              // le curseur balaie la neige du meuble et du sapin
+    var R = RAYON * 0.6, ry = R * 0.8;
+    tg.globalCompositeOperation = "destination-out";
+    tg.globalAlpha = Math.min(0.9, 0.14 + vit * 0.0007);
+    tg.drawImage(spriteBlob, ptr.x - R, ptr.y - ry, R * 2, ry * 2);
+    tg.globalCompositeOperation = "source-over"; tg.globalAlpha = 1;
+    var cx0 = Math.max(0, Math.floor((ptr.x - R) / CELL)), cx1 = Math.min(covW - 1, Math.floor((ptr.x + R) / CELL));
+    var cy0 = Math.max(0, Math.floor((ptr.y - ry) / CELL)), cy1 = Math.min(covH - 1, Math.floor((ptr.y + ry) / CELL));
+    for (var cy = cy0; cy <= cy1; cy++) for (var cx = cx0; cx <= cx1; cx++) {
+      var c = cy * covW + cx, v = cov[c]; if (v <= 0) continue;
+      var mx = (cx + 0.5) * CELL - ptr.x, my = ((cy + 0.5) * CELL - ptr.y) / 0.8, d = Math.sqrt(mx * mx + my * my);
+      if (d > R) continue;
+      var pris = Math.min(v, v * 0.3 + 0.06);
+      cov[c] -= pris; accTas += pris;
+      var z = zones[covZ[c]]; if (z) z.nb = Math.max(0, z.nb - pris);
+      while (accTas >= 1) {
+        accTas -= 1;
+        if (nTemp >= MAX_TEMP) continue;
+        var dd = d || 1;
+        flocons.push({
+          x: (cx + Math.random()) * CELL, y: (cy + Math.random()) * CELL, s: Math.floor(Math.random() * 3), temp: true,
+          vy: 26 + Math.random() * 20, amp: 3 + Math.random() * 6, freq: 0.6 + Math.random() * 0.9, ph: Math.random() * 6.283,
+          alpha: 0.95, ox: (mx / dd) * (110 + Math.random() * 240) + vxp * 0.35,
+          oy: (my / dd) * 60 - 50 - Math.random() * 160 + vyp * 0.2
+        });
+        nTemp++;
+      }
+    }
+  }
+
   /* ---------- Flocons ---------- */
   // Sprites pré-dessinés (halo doux) : plus rapide que 700 gradients par image.
   function fabriqueSprites() {
@@ -196,6 +331,7 @@
     base.length = n;
     flocons = base; nTemp = 0;
     miseEnPlaceToit();
+    placerZones();
   }
 
   function pointeur(e) {
@@ -227,6 +363,11 @@
     var vmax = 1400, vxp = Math.max(-vmax, Math.min(vmax, ptr.vx)), vyp = Math.max(-vmax, Math.min(vmax, ptr.vy));
 
     if (now > prochaineVerif) { prochaineVerif = now + 600; verifieToit(); }
+    var vit = Math.sqrt(vxp * vxp + vyp * vyp);
+    if (zones.length) {
+      if (ptr.actif) chasseTas(dt, vit, vxp, vyp);
+      ctx.drawImage(tas, 0, 0, W, H);
+    }
     if (toit.ok) {
       if (ptr.actif) chasseToit(dt, vxp, vyp);
       lisse();
@@ -274,6 +415,31 @@
             else { var m = nouveau(false); m.x = Math.random() * W; flocons[i] = m; }
             continue;
           }
+        }
+      }
+
+      if (zones.length) {                          // le flocon se pose-t-il sur le meuble ou le sapin ?
+        var zi, z, zc, pose = false;
+        if (f.yl !== undefined) {
+          z = zones[f.zi]; zc = z ? Math.floor((x - z.x0) / z.pas) : -1;
+          if (zc < 0 || zc >= z.n || !(z.top[zc] === z.top[zc])) f.yl = undefined;
+          else if (f.y >= f.yl) pose = true;
+        } else if (f.y > yPrec) {
+          for (zi = 0; zi < zones.length; zi++) {
+            z = zones[zi]; zc = Math.floor((x - z.x0) / z.pas);
+            if (zc < 0 || zc >= z.n || !(z.top[zc] === z.top[zc])) continue;
+            if (yPrec < z.top[zc] && f.y >= z.top[zc]) {
+              f.zi = zi; f.yl = z.top[zc] + (z.bot[zc] - z.top[zc]) * Math.random();
+              if (f.y >= f.yl) pose = true;
+              break;
+            }
+          }
+        }
+        if (pose) {
+          poserTas(f.zi, x, f.yl, f.s);
+          if (f.temp) { flocons.splice(i, 1); i--; nTemp--; }
+          else { var m2 = nouveau(false); m2.x = Math.random() * W; flocons[i] = m2; }
+          continue;
         }
       }
 
