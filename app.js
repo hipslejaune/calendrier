@@ -158,7 +158,7 @@
   var piste = musiqueDuJour(jourRef), musique = null;
   if (piste) {
     musique = new Audio(piste);
-    musique.loop = true; musique.volume = .4; musique.preload = "auto";
+    musique.loop = true; musique.volume = .2; musique.preload = "auto";
   }
   function jouerMusique() {
     if (!musique || muet || document.hidden) return;
