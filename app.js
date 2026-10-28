@@ -90,6 +90,28 @@
       decorPos[n] = "--bs:" + (iw / b[2] * 100).toFixed(2) + "% " + (ih / bh * 100).toFixed(2) + "%;--bp:" + px.toFixed(2) + "% " + py.toFixed(2) + "%";
     });
   })();
+  // Luminosité moyenne de chaque décor : les lutins sont « multipliés » par la scène (ils passent derrière les barreaux et prennent la
+  // lumière de la pièce), donc on les éclaircit d'autant plus que le décor est sombre.
+  var decorLum = {};
+  (function () {
+    var cache = {};
+    Object.keys(decorDe).forEach(function (n) {
+      var src = decorDe[n];
+      if (cache[src] !== undefined) { decorLum[n] = cache[src]; return; }
+      cache[src] = .4; decorLum[n] = .4;
+      var im = new Image();
+      im.onload = function () {
+        try {
+          var c = document.createElement("canvas"); c.width = c.height = 24; var x = c.getContext("2d"); x.drawImage(im, 0, 0, 24, 24);
+          var d = x.getImageData(0, 0, 24, 24).data, s = 0, k = 0;
+          for (var i = 0; i < d.length; i += 4) { s += (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255; k++; }
+          cache[src] = s / k;
+          Object.keys(decorDe).forEach(function (m) { if (decorDe[m] === src) decorLum[m] = cache[src]; });
+        } catch (e) {}
+      };
+      im.src = src;
+    });
+  })();
   function construire() {
     portes.textContent = "";
     for (var n = 1; n <= 24; n++) {
@@ -433,10 +455,10 @@
     do { b = ouv[Math.floor(Math.random() * ouv.length)]; } while (b === a);
     var W = lutins.offsetWidth, H = lutins.offsetHeight; if (!W || !H) return;
     var ba = CH.boxes[a], bb = CH.boxes[b];
-    function sol(bx) { return (bx[1] + bx[3] * 0.92) * H; }          // le sol de la fenêtre (en px)
+    function sol(bx) { return (bx[1] + bx[3] * 1.07) * H; }          // « sol » légèrement sous la fenêtre : on ne voit pas leurs pieds, ils marchent derrière le rebord
     var xa = (ba[0] + ba[2] / 2) * W, xb = (bb[0] + bb[2] / 2) * W, fa = sol(ba), fb = sol(bb);
     var dir = xb >= xa ? 1 : -1;
-    var hauteur = Math.max(0.07 * W, Math.min(0.14 * W, Math.min(ba[3], bb[3]) * H * 0.84));
+    var hauteur = Math.max(0.07 * W, Math.min(0.14 * W, Math.min(ba[3], bb[3]) * H * 0.92));
     var largeur = hauteur * 40 / 66;
     var photo = null, v, tphoto = null;
     if (photosOK.length) {
@@ -462,6 +484,7 @@
     var vitesse = photo ? hauteur * 1.25 : W * 0.1, pause = travail ? 5200 : 0;
     var marche = tot / vitesse * 1000, duree = marche + pause;
     var T = TENUES[Math.floor(Math.random() * TENUES.length)];
+    var lum = ((decorLum[a] || .4) + (decorLum[b] || .4)) / 2, eclat = Math.max(1.3, Math.min(3.3, 0.5 / Math.max(.1, lum)));
     var el = document.createElement("div");
     el.className = "lutin" + (v === 3 ? "" : v < NB_PORTE ? " porte-cadeau" : "");
     if (photo) {                                              // planche de 6 images : 150x220, pieds à 98,5 % de la hauteur
@@ -484,6 +507,7 @@
       el.innerHTML = '<div class="lutin-in">' + svgLutin(v, T) + "</div>";
       if (dir < 0) el.querySelector("svg").style.transform = "scaleX(-1)";
     }
+    el.style.filter = "brightness(" + eclat.toFixed(2) + ")";
     lutins.appendChild(el); nLutins++;
     var kf = [], cum = 0, tPause0 = 0, tPause1 = 0;
     function pos(p, off) { return { transform: "translate(" + p[0].toFixed(1) + "px," + p[1].toFixed(1) + "px)", offset: Math.min(1, off) }; }

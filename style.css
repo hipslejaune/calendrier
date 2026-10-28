@@ -132,12 +132,12 @@ body.glisse #vue{cursor:grabbing}
 }
 
 /* Lutins en couleur : ils marchent dans la maison et ne se voient que dans les fenêtres ouvertes */
-#lutins{position:absolute;inset:0;pointer-events:none;z-index:5}
+#lutins{position:absolute;inset:0;pointer-events:none;z-index:5;mix-blend-mode:multiply}
 .lutin{position:absolute;left:0;top:0;transform-origin:50% 100%;will-change:transform}
 .lutin-in{width:100%;height:100%;animation:trot .46s ease-in-out infinite alternate}
-.lutin svg{display:block;width:100%;height:100%;overflow:visible;filter:brightness(.86) saturate(.95) drop-shadow(0 0 .3cqw rgba(255,190,90,.45))}
+.lutin svg{display:block;width:100%;height:100%;overflow:visible}
 .lutin.photo .lutin-in{animation:none}
-.lutin .img{width:100%;height:100%;background-size:600% 100%;background-repeat:no-repeat;filter:brightness(.9) saturate(.95)}
+.lutin .img{width:100%;height:100%;background-size:600% 100%;background-repeat:no-repeat}
 .lutin .jb1{transform-origin:16px 47px;animation:balance .46s ease-in-out infinite alternate}
 .lutin .jb2{transform-origin:23px 47px;animation:balance .46s ease-in-out infinite alternate-reverse}
 .lutin .br1{transform-origin:14px 31px;animation:balance .46s ease-in-out infinite alternate-reverse}
