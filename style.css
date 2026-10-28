@@ -245,7 +245,7 @@ body.glisse #vue{cursor:grabbing}
 #tableau-grand{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(0,0,0,.78);cursor:pointer}
 #tableau-grand[hidden]{display:none}
 #tableau-grand canvas{width:min(94vw,calc(88vh*1.3));height:auto;box-shadow:0 10px 60px #000;border-radius:6px}
-#tableau-grand.vertical{display:block;overflow-y:auto;padding:3rem 2vw 1.5rem;-webkit-overflow-scrolling:touch}
+#tableau-grand.vertical:not([hidden]){display:block;overflow-y:auto;padding:3rem 2vw 1.5rem;-webkit-overflow-scrolling:touch}
 #tableau-grand.vertical canvas{width:96vw;height:auto;display:block;margin:0 auto}
 #tableau-grand{touch-action:pan-y}
 #tg-fermer{position:fixed;z-index:45;right:max(.8rem,env(safe-area-inset-right));top:max(.8rem,env(safe-area-inset-top));padding:.7rem 1.1rem;min-height:2.8rem;border-radius:2rem;border:1px solid rgba(255,243,200,.6);background:rgba(20,28,25,.92);color:#ffe9a8;font:600 1rem Georgia,serif;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
