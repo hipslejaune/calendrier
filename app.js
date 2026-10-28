@@ -207,6 +207,7 @@
     fermerCarte();
     Object.keys(boutons).forEach(function (n) { boutons[n].classList.remove("ouverte"); });
     ouvertes = []; ecrire(cleOuvertes, ouvertes);
+    majMasqueLutins();
     grincement();
     majFermer();
     message("Les portes sont refermées 🎄");
@@ -248,41 +249,105 @@
 
   majFermer();
 
-  /* ---------- Lutins : ombres qui trottent d'une porte ouverte à une autre ---------- */
+  /* ---------- Lutins : ils trottent À L'INTÉRIEUR de la maison, d'une fenêtre ouverte à l'autre ----------
+     Ils ne sont visibles que dans les fenêtres ouvertes (le reste du trajet se fait « dans les murs »). */
   var lutins = document.createElement("div");
   lutins.id = "lutins";
   document.getElementById("chalet").appendChild(lutins);
-  var SVG_LUTIN = '<svg viewBox="0 0 40 64" aria-hidden="true"><g class="jb1"><path d="M13 45h6l-1 14 3 2.5q1 1.5-1 2h-8q-1.5 0-1-1.5L12 59z"/></g>' +
-    '<g class="jb2"><path d="M21 45h6l1 14 3 2.5q1 1.5-1 2h-8q-2 0-1-1.5L24 59z"/></g>' +
-    '<g class="br1"><path d="M14 30l-8 11 3 2.5 8-8z"/></g><g class="br2"><path d="M26 30l8 11-3 2.5-8-8z"/></g>' +
-    '<path d="M12 31q8-3 16 0l3 16H9z"/><circle cx="20" cy="24" r="6"/><path d="M14 22l-6-3 5 7zM26 22l6-3-5 7z"/>' +
-    '<path d="M11 21q1-9 7-14t14-4q-6 3-6 7 0 4 4 11z"/><circle cx="32" cy="3" r="2.6"/></svg>';
-  var nLutins = 0, tLutin = 0;
+
+  var JAMBES = '<g class="jb1"><path d="M13 45h6l-1 14 3 2.5q1 1.5-1 2h-8q-1.5 0-1-1.5L12 59z"/></g>' +
+               '<g class="jb2"><path d="M21 45h6l1 14 3 2.5q1 1.5-1 2h-8q-2 0-1-1.5L24 59z"/></g>';
+  var BRAS = '<g class="br1"><path d="M14 30l-8 11 3 2.5 8-8z"/></g><g class="br2"><path d="M26 30l8 11-3 2.5-8-8z"/></g>';
+  var TETE = '<path d="M12 31q8-3 16 0l3 16H9z"/><circle cx="20" cy="24" r="6"/><path d="M14 22l-6-3 5 7zM26 22l6-3-5 7z"/>';
+  var VARIANTES = [
+    // 1. bonnet pointu à pompon
+    '<path d="M11 21q1-9 7-14t14-4q-6 3-6 7 0 4 4 11z"/><circle cx="32" cy="3" r="2.6"/>',
+    // 2. bonnet recourbé avec grelot
+    '<path d="M11 21q0-9 6-12t13 1q3 1 4 4-2-2-6-2-5 0-6 4l4 9z"/><circle cx="34" cy="15" r="2.6"/>',
+    // 3. bonnet rond, pompon et écharpe au vent
+    '<path d="M12 22q0-11 8-11t8 11z"/><circle cx="20" cy="9" r="3.2"/><path d="M14 29q-9 0-12 6 7-3 13 0z"/><path d="M14 29l-3 10 4 1 2-9z"/>',
+    // 4. grand bonnet droit et sac sur le dos
+    '<path d="M14 21l6-19 6 19z"/><circle cx="8" cy="38" r="8"/><path d="M12 31l4-1-2 8z"/>',
+    // 5. chapeau mou et cadeau dans les bras
+    '<path d="M9 21q11-3 22 0l-3-8q-3-9-9-9t-7 9z"/><circle cx="26" cy="5" r="2.4"/><rect x="22" y="37" width="12" height="11" rx="1"/><path d="M27 33h2v4h-2zM24 34l3 3 3-3-3-2z"/>',
+    // 6. bonnet pointu et canne à sucre
+    '<path d="M12 21q0-10 8-19 8 9 8 19z"/><path d="M33 33h3.2v21q0 7-7 7v-3q3.8 0 3.8-4z"/>'
+  ];
+  function svgLutin(v) {
+    return '<svg viewBox="0 0 40 64" aria-hidden="true">' + JAMBES + BRAS + TETE + VARIANTES[v % VARIANTES.length] + "</svg>";
+  }
+
+  var nLutins = 0, tLutin = 0, ouvertA = {};
   var sansAnim = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function fenetresVisibles() {                               // fenêtres ouvertes (cheminée exclue) et déjà bien ouvertes
+    var maintenant = Date.now();
+    return ouvertes.filter(function (n) {
+      return n !== CHEMINEE && CH.boxes[n] && boutons[n] && boutons[n].classList.contains("ouverte") &&
+             maintenant - (ouvertA[n] || 0) > 1300;
+    });
+  }
+  // Les lutins ne sont visibles que dans les fenêtres ouvertes : on découpe leur calque selon ces fenêtres.
+  function majMasqueLutins() {
+    var W = lutins.offsetWidth, H = lutins.offsetHeight, d = "";
+    if (!W || !H) return;
+    fenetresVisibles().forEach(function (n) {
+      var b = CH.boxes[n], ix = 0.03, x = (b[0] + b[2] * ix) * W, y = (b[1] + b[3] * ix) * H, w = b[2] * (1 - 2 * ix) * W, h = b[3] * (1 - 2 * ix) * H;
+      var f = function (v) { return v.toFixed(1); };
+      if (ROND.indexOf(n) >= 0) {
+        var r = Math.min(w, h) / 2, cx = x + w / 2, cy = y + h / 2;
+        d += "M" + f(cx - r) + " " + f(cy) + "a" + f(r) + " " + f(r) + " 0 1 0 " + f(2 * r) + " 0a" + f(r) + " " + f(r) + " 0 1 0 " + f(-2 * r) + " 0z";
+      } else if (ARCHE.indexOf(n) >= 0) {
+        var ra = w / 2;
+        d += "M" + f(x) + " " + f(y + ra) + "a" + f(ra) + " " + f(ra) + " 0 0 1 " + f(w) + " 0V" + f(y + h) + "H" + f(x) + "z";
+      } else {
+        d += "M" + f(x) + " " + f(y) + "h" + f(w) + "v" + f(h) + "h" + f(-w) + "z";
+      }
+    });
+    lutins.style.clipPath = d ? 'path("' + d + '")' : 'path("M0 0")';
+  }
+  window.addEventListener("resize", majMasqueLutins);
+
   function lancerLutin() {
-    if (sansAnim || document.hidden || nLutins >= 2) return;
-    var ouv = ouvertes.filter(function (n) { return CH.boxes[n] && boutons[n] && boutons[n].classList.contains("ouverte"); });
+    if (sansAnim || document.hidden || nLutins >= 3) return;
+    var ouv = fenetresVisibles();
     if (ouv.length < 2) return;
     var a = ouv[Math.floor(Math.random() * ouv.length)], b;
     do { b = ouv[Math.floor(Math.random() * ouv.length)]; } while (b === a);
-    function pied(n) { var bx = CH.boxes[n]; return [(bx[0] + bx[2] / 2) * 100, (bx[1] + bx[3] * 0.9) * 100]; }
-    var pa = pied(a), pb = pied(b);
-    var dist = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]);            // en % de la largeur du chalet
-    var duree = Math.max(2200, Math.min(7000, dist * 95));
+    var W = lutins.offsetWidth, H = lutins.offsetHeight; if (!W || !H) return;
+    var ba = CH.boxes[a], bb = CH.boxes[b];
+    function sol(bx) { return (bx[1] + bx[3] * 0.9) * H; }           // le sol de la fenêtre (en px)
+    var xa = (ba[0] + ba[2] / 2) * W, xb = (bb[0] + bb[2] / 2) * W, fa = sol(ba), fb = sol(bb);
+    var dir = xb >= xa ? 1 : -1;
+    var xe = dir > 0 ? (ba[0] + ba[2]) * W : ba[0] * W;                // il sort de sa fenêtre côté destination
+    var xn = dir > 0 ? bb[0] * W : (bb[0] + bb[2]) * W;                // et entre dans l'autre par le côté proche
+    if ((xn - xe) * dir < 0) xn = xe;
+    var pts = [[xa, fa], [xe, fa], [xn, fb], [xb, fb]], lg = [], tot = 0, i;
+    for (i = 1; i < pts.length; i++) { var l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); lg.push(l); tot += l; }
+    if (tot < 8) return;
+    var hauteur = Math.max(0.06 * W, Math.min(0.13 * W, Math.min(ba[3], bb[3]) * H * 0.78));
+    var largeur = hauteur * 0.625;
+    var duree = Math.max(2400, Math.min(11000, tot / (W * 0.11) * 1000));
     var el = document.createElement("div");
     el.className = "lutin";
-    el.innerHTML = '<div class="lutin-in">' + SVG_LUTIN + "</div>";
-    if (pb[0] < pa[0]) el.querySelector("svg").style.transform = "scaleX(-1)";
+    el.style.cssText = "width:" + largeur.toFixed(1) + "px;height:" + hauteur.toFixed(1) + "px;margin-left:" + (-largeur / 2).toFixed(1) +
+                       "px;margin-top:" + (-hauteur).toFixed(1) + "px";
+    el.innerHTML = '<div class="lutin-in">' + svgLutin(Math.floor(Math.random() * VARIANTES.length)) + "</div>";
+    if (dir < 0) el.querySelector("svg").style.transform = "scaleX(-1)";
     lutins.appendChild(el); nLutins++;
-    function kf(p, o, s, off) { return { left: p[0] + "%", top: p[1] + "%", opacity: o, transform: "translate(-50%,-100%) scale(" + s + ")", offset: off }; }
-    var anim = el.animate([kf(pa, 0, .3, 0), kf(pa, 1, 1, .1), kf(pb, 1, 1, .9), kf(pb, 0, .3, 1)], { duration: duree, easing: "linear", fill: "forwards" });
+    var kf = [], cum = 0;
+    function pos(p, off, o) { return { transform: "translate(" + p[0].toFixed(1) + "px," + p[1].toFixed(1) + "px)", opacity: o, offset: off }; }
+    kf.push(pos(pts[0], 0, 0)); kf.push(pos(pts[0], 0.02, 1));
+    for (i = 1; i < pts.length; i++) { cum += lg[i - 1]; kf.push(pos(pts[i], Math.min(0.98, cum / tot), 1)); }
+    kf[kf.length - 1].offset = 0.98; kf.push(pos(pts[3], 1, 0));
+    var anim = el.animate(kf, { duration: duree, easing: "linear", fill: "forwards" });
     anim.onfinish = function () { el.remove(); nLutins--; };
   }
   function planifierLutin() {
     clearTimeout(tLutin);
-    tLutin = setTimeout(function () { try { lancerLutin(); } catch (e) {} planifierLutin(); }, 2500 + Math.random() * 4500);
+    tLutin = setTimeout(function () { try { lancerLutin(); } catch (e) {} planifierLutin(); }, 1800 + Math.random() * 3600);
   }
   planifierLutin();
+  majMasqueLutins();
 
   /* ---------- Clic sur une fenêtre ---------- */
   var occupe = false;
@@ -301,6 +366,7 @@
     b.classList.add("ouverte");
     grincement();
     if (ouvertes.indexOf(n) < 0) { ouvertes.push(n); ecrire(cleOuvertes, ouvertes); majFermer(); }
+    ouvertA[n] = Date.now(); setTimeout(majMasqueLutins, 1350);
     setTimeout(function () { occupe = false; afficherCarte(n); }, 1300);
   });
 
