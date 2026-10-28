@@ -247,6 +247,42 @@
 
   majFermer();
 
+  /* ---------- Lutins : ombres qui trottent d'une porte ouverte à une autre ---------- */
+  var lutins = document.createElement("div");
+  lutins.id = "lutins";
+  document.getElementById("chalet").appendChild(lutins);
+  var SVG_LUTIN = '<svg viewBox="0 0 40 64" aria-hidden="true"><g class="jb1"><path d="M13 45h6l-1 14 3 2.5q1 1.5-1 2h-8q-1.5 0-1-1.5L12 59z"/></g>' +
+    '<g class="jb2"><path d="M21 45h6l1 14 3 2.5q1 1.5-1 2h-8q-2 0-1-1.5L24 59z"/></g>' +
+    '<g class="br1"><path d="M14 30l-8 11 3 2.5 8-8z"/></g><g class="br2"><path d="M26 30l8 11-3 2.5-8-8z"/></g>' +
+    '<path d="M12 31q8-3 16 0l3 16H9z"/><circle cx="20" cy="24" r="6"/><path d="M14 22l-6-3 5 7zM26 22l6-3-5 7z"/>' +
+    '<path d="M11 21q1-9 7-14t14-4q-6 3-6 7 0 4 4 11z"/><circle cx="32" cy="3" r="2.6"/></svg>';
+  var nLutins = 0, tLutin = 0;
+  var sansAnim = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function lancerLutin() {
+    if (sansAnim || document.hidden || nLutins >= 2) return;
+    var ouv = ouvertes.filter(function (n) { return CH.boxes[n] && boutons[n] && boutons[n].classList.contains("ouverte"); });
+    if (ouv.length < 2) return;
+    var a = ouv[Math.floor(Math.random() * ouv.length)], b;
+    do { b = ouv[Math.floor(Math.random() * ouv.length)]; } while (b === a);
+    function pied(n) { var bx = CH.boxes[n]; return [(bx[0] + bx[2] / 2) * 100, (bx[1] + bx[3] * 0.9) * 100]; }
+    var pa = pied(a), pb = pied(b);
+    var dist = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]);            // en % de la largeur du chalet
+    var duree = Math.max(2200, Math.min(7000, dist * 95));
+    var el = document.createElement("div");
+    el.className = "lutin";
+    el.innerHTML = '<div class="lutin-in">' + SVG_LUTIN + "</div>";
+    if (pb[0] < pa[0]) el.querySelector("svg").style.transform = "scaleX(-1)";
+    lutins.appendChild(el); nLutins++;
+    function kf(p, o, s, off) { return { left: p[0] + "%", top: p[1] + "%", opacity: o, transform: "translate(-50%,-100%) scale(" + s + ")", offset: off }; }
+    var anim = el.animate([kf(pa, 0, .3, 0), kf(pa, 1, 1, .1), kf(pb, 1, 1, .9), kf(pb, 0, .3, 1)], { duration: duree, easing: "linear", fill: "forwards" });
+    anim.onfinish = function () { el.remove(); nLutins--; };
+  }
+  function planifierLutin() {
+    clearTimeout(tLutin);
+    tLutin = setTimeout(function () { try { lancerLutin(); } catch (e) {} planifierLutin(); }, 2500 + Math.random() * 4500);
+  }
+  planifierLutin();
+
   /* ---------- Clic sur une fenêtre ---------- */
   var occupe = false;
   portes.addEventListener("click", function (e) {
