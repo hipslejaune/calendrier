@@ -132,7 +132,8 @@ body.glisse #vue{cursor:grabbing}
 }
 
 /* Lutins en couleur : ils marchent dans la maison et ne se voient que dans les fenêtres ouvertes */
-#lutins{position:absolute;inset:0;pointer-events:none;z-index:5;mix-blend-mode:multiply}
+#lutins{position:absolute;inset:0;pointer-events:none;z-index:5}
+.cadre-lutin{position:absolute;inset:0;mix-blend-mode:multiply}
 .lutin{position:absolute;left:0;top:0;transform-origin:50% 100%;will-change:transform}
 .lutin-in{width:100%;height:100%;animation:trot .46s ease-in-out infinite alternate}
 .lutin svg{display:block;width:100%;height:100%;overflow:visible}
