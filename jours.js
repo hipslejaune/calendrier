@@ -2,6 +2,10 @@
 window.CALENDRIER = {
   annee: 2026,
 
+  // MODE TEST : true = toutes les cases s'ouvrent, comme si on était le 24 décembre.
+  // À remettre à false avant d'envoyer le lien aux invitées.
+  debloquerTout: true,
+
   // Fonds : un jeu d'images par jour = img/jour-NN-desktop.webp et img/jour-NN-mobile.webp
   // Ajouter ici le numéro du jour dès que ses deux images sont dans img/.
   fonds: [1],

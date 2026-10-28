@@ -19,7 +19,7 @@
     if (a > CAL.annee || (a === CAL.annee && d.getDate() >= 24)) return 24;
     return d.getDate();
   }
-  var AUJ = jourCourant();
+  var AUJ = CAL.debloquerTout ? 24 : jourCourant();
   var jourRef = Math.max(1, Math.min(24, AUJ));        // jour qui décide du fond et de la musique
   function dateTexte(n) { return (n === 1 ? "1er" : n) + " décembre"; }
 
