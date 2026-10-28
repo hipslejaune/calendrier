@@ -322,6 +322,14 @@
     }
   ];
   var NB_PORTE = 4;
+  /* Lutins photo : planches de 6 images (150x220 chacune) dans img/lutins/. Celles qui se chargent remplacent les porteurs dessinés. */
+  var PHOTOS = ["img/lutins/marche1.webp", "img/lutins/marche2.webp", "img/lutins/marche3.webp", "img/lutins/marche4.webp"], photosOK = [];
+  // Lutins qui fabriquent : ils arrivent en marchant (planche "marche" de tenue proche), s'arrêtent, puis passent à la planche "travail".
+  var TRAVAUX = [{ src: "img/lutins/travail1.webp", marche: "img/lutins/marche2.webp" }, { src: "img/lutins/travail2.webp", marche: "img/lutins/marche1.webp" },
+    { src: "img/lutins/travail3.webp", marche: "img/lutins/marche3.webp" }, { src: "img/lutins/travail4.webp", marche: "img/lutins/marche4.webp" }], travauxOK = [];
+  function precharge(src, ok) { var im = new Image(); im.onload = function () { ok(src); }; im.src = src; }
+  PHOTOS.forEach(function (src) { precharge(src, function (s) { photosOK.push(s); }); });
+  TRAVAUX.forEach(function (t) { precharge(t.src, function () { if (photosOK.indexOf(t.marche) >= 0 || true) travauxOK.push(t); }); });
   function svgLutin(v, T) {
     return '<svg viewBox="0 0 40 66" aria-hidden="true">' + MODELES[v % MODELES.length](T) + "</svg>";
   }
@@ -369,7 +377,17 @@
     var dir = xb >= xa ? 1 : -1;
     var hauteur = Math.max(0.07 * W, Math.min(0.14 * W, Math.min(ba[3], bb[3]) * H * 0.84));
     var largeur = hauteur * 40 / 66;
-    var v = Math.floor(Math.random() * MODELES.length), travail = v >= NB_PORTE && v < 7;
+    var photo = null, v, tphoto = null;
+    if (photosOK.length) {
+      if (travauxOK.length && Math.random() < 0.4) { tphoto = travauxOK[Math.floor(Math.random() * travauxOK.length)]; photo = tphoto.marche; }
+      else photo = photosOK[Math.floor(Math.random() * photosOK.length)];
+    }
+    if (photo && photosOK.indexOf(photo) < 0) { photo = photosOK[0]; tphoto = null; }
+    if (photo) v = 0;
+    else {
+      do { v = Math.floor(Math.random() * MODELES.length); } while (photosOK.length && v < NB_PORTE);   // photos dispo : plus de porteurs dessinés
+    }
+    var travail = !!tphoto || (!photo && v >= NB_PORTE && v < 7);
     // il entre par le bord de la fenêtre de départ, traverse, et sort par le bord de l'autre (jamais de disparition au milieu)
     var xs = dir > 0 ? ba[0] * W - largeur : (ba[0] + ba[2]) * W + largeur;
     var xe = dir > 0 ? (bb[0] + bb[2]) * W + largeur : bb[0] * W - largeur;
@@ -380,30 +398,45 @@
     var lg = [], tot = 0, i;
     for (i = 1; i < pts.length; i++) { var l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); lg.push(l); tot += l; }
     if (tot < 8) return;
-    var vitesse = W * 0.1, pause = travail ? 5200 : 0;
+    var vitesse = photo ? hauteur * 1.25 : W * 0.1, pause = travail ? 5200 : 0;
     var marche = tot / vitesse * 1000, duree = marche + pause;
     var T = TENUES[Math.floor(Math.random() * TENUES.length)];
     var el = document.createElement("div");
     el.className = "lutin" + (v === 3 ? "" : v < NB_PORTE ? " porte-cadeau" : "");
-    el.style.cssText = "width:" + largeur.toFixed(1) + "px;height:" + hauteur.toFixed(1) + "px;margin-left:" + (-largeur / 2).toFixed(1) +
-                       "px;margin-top:" + (-hauteur).toFixed(1) + "px";
-    el.innerHTML = '<div class="lutin-in">' + svgLutin(v, T) + "</div>";
-    if (dir < 0) el.querySelector("svg").style.transform = "scaleX(-1)";
+    if (photo) {                                              // planche de 6 images : 150x220, pieds à 98,5 % de la hauteur
+      var hp = hauteur * 220 / 208, wp = hp * 150 / 220;
+      el.className = "lutin photo";
+      el.style.cssText = "width:" + wp.toFixed(1) + "px;height:" + hp.toFixed(1) + "px;margin-left:" + (-wp / 2).toFixed(1) +
+                         "px;margin-top:" + (-hp * 0.985).toFixed(1) + "px";
+      el.innerHTML = '<div class="lutin-in"><div class="img" style="background-image:url(' + photo + ')"></div></div>';
+      var im = el.querySelector(".img");
+      if (dir < 0) im.style.transform = "scaleX(-1)";
+      var jouerPlanche = function (src, duree) {
+        if (im._a) im._a.cancel();
+        im.style.backgroundImage = "url(" + src + ")";
+        im._a = im.animate([{ backgroundPositionX: "0%" }, { backgroundPositionX: "120%" }], { duration: duree, iterations: Infinity, easing: "steps(6, end)" });
+      };
+      jouerPlanche(photo, 900);
+    } else {
+      el.style.cssText = "width:" + largeur.toFixed(1) + "px;height:" + hauteur.toFixed(1) + "px;margin-left:" + (-largeur / 2).toFixed(1) +
+                         "px;margin-top:" + (-hauteur).toFixed(1) + "px";
+      el.innerHTML = '<div class="lutin-in">' + svgLutin(v, T) + "</div>";
+      if (dir < 0) el.querySelector("svg").style.transform = "scaleX(-1)";
+    }
     lutins.appendChild(el); nLutins++;
     var kf = [], cum = 0, tPause0 = 0, tPause1 = 0;
     function pos(p, off) { return { transform: "translate(" + p[0].toFixed(1) + "px," + p[1].toFixed(1) + "px)", offset: Math.min(1, off) }; }
     kf.push(pos(pts[0], 0));
     for (i = 1; i < pts.length; i++) {
       var dm = lg[i - 1] / vitesse * 1000;
-      if (travail && i === 3) { tPause0 = cum; cum += pause; tPause1 = cum; kf.push(pos(pts[i], cum / duree)); continue; }
+      if (travail && i === 2) { tPause0 = cum; cum += pause; tPause1 = cum; kf.push(pos(pts[i], cum / duree)); continue; }
       cum += dm; kf.push(pos(pts[i], cum / duree));
     }
     kf[kf.length - 1].offset = 1;
     var anim = el.animate(kf, { duration: duree, easing: "linear", fill: "forwards" });
     if (travail) {
-      var inner = el.querySelector(".lutin-in");
-      setTimeout(function () { el.classList.add("travaille"); }, tPause0);
-      setTimeout(function () { el.classList.remove("travaille"); }, tPause1);
+      setTimeout(function () { el.classList.add("travaille"); if (tphoto) jouerPlanche(tphoto.src, 1200); }, tPause0);
+      setTimeout(function () { el.classList.remove("travaille"); if (tphoto) jouerPlanche(photo, 900); }, tPause1);
     }
     anim.onfinish = function () { el.remove(); nLutins--; };
   }
