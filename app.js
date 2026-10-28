@@ -422,12 +422,32 @@
   /* ---------- Tableau à craie (mur sous la fenêtre aux rideaux) : un jour ouvert = une ligne écrite à la craie ---------- */
   var COURT = ["Un compliment à une maman","Un petit plaisir rien que pour toi","15 min de gym ou de yoga","La phrase qui remonte le moral","Danse de Noël en famille","Balade avec les enfants + photo","Selfie de maman en pyjama","Un café ou goûter entre mamans","Un moment drôle ou raté","Portrait robot de la maman parfaite","Le trophée du fail de la semaine","Ton sapin et ta déco de Noël","Photo avant / après le café","Un livre ou une série à partager","Défi gainage : la planche","Lettre à toi-même d’il y a 5 ans","Recette chocolat chaud ou gâteaux","Défi imitation : ta voix qui gronde","Le CV improbable de maman","Défi grimace ou fou rire","Une chose gourmande pour toi","La phrase la plus drôle des enfants","Une carte postale à une maman","Photo de famille en pulls de Noël"];
   var tabC = document.createElement("canvas"); tabC.width = 1800; tabC.height = 1385;
-  function dessinerTableau() {
-    var c = tabC.getContext("2d"), W = tabC.width, H = tabC.height;
+  function dessinerTableau(cv, cols) {
+    cv = cv || tabC; cols = cols || 2;
+    var c = cv.getContext("2d"), W, H, m = 38, f, y0 = 200, pol = '"Segoe Print","Bradley Hand","Chalkduster","Comic Sans MS","Marker Felt",cursive';
+    function texteDe(n) { var j = CAL.jours[n]; return (j && j.texte ? j.texte : "").replace(/\s+/g, " "); }
+    function ouvert(n) { return boutons[n] && boutons[n].classList.contains("ouverte"); }
+    var tw0, par = cols === 1 ? 24 : 12;
+    function lignes(t, f) {
+      c.font = f + "px " + pol; var mots = t.split(" "), L = [], cur = "";
+      mots.forEach(function (w) { var essai = cur ? cur + " " + w : w; if (c.measureText(essai).width > tw0 && cur) { L.push(cur); cur = w; } else cur = essai; });
+      if (cur) L.push(cur); return L;
+    }
+    function hauteur(col, f) { var h = 0; for (var k = 1; k <= par; k++) { var n = col * par + k; h += ouvert(n) ? lignes(texteDe(n), f).length * f * 1.18 + f * .45 : f * 1.5; } return h; }
+    var colW;
+    if (cols === 1) {                                                        // téléphone : une seule colonne, en hauteur
+      W = 1000; m = 30; f = 40; colW = W - 2 * m - 60; tw0 = colW - 80;
+      c = document.createElement("canvas").getContext("2d");               // mesure
+      H = y0 + hauteur(0, f) + 110;
+      cv.width = W; cv.height = H; c = cv.getContext("2d");
+    } else {
+      W = cv.width; H = cv.height; colW = (W - 2 * m - 90) / 2; tw0 = colW - 80;
+      f = 34; while (f > 12 && (hauteur(0, f) > H - 95 - y0 || hauteur(1, f) > H - 95 - y0)) f--;
+    }
     c.clearRect(0, 0, W, H);
     var g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#7a5230"); g.addColorStop(.5, "#5b3a20"); g.addColorStop(1, "#6d4627");
     c.fillStyle = g; c.fillRect(0, 0, W, H);
-    var m = 38, rg = c.createRadialGradient(W / 2, H / 2, H * .15, W / 2, H / 2, W * .65);
+    var rg = c.createRadialGradient(W / 2, H / 2, H * .15, W / 2, H / 2, Math.max(W, H) * .65);
     rg.addColorStop(0, "#35433f"); rg.addColorStop(1, "#1f2926");
     c.fillStyle = rg; c.fillRect(m, m, W - 2 * m, H - 2 * m);
     c.strokeStyle = "rgba(0,0,0,.55)"; c.lineWidth = 6; c.strokeRect(m, m, W - 2 * m, H - 2 * m);
@@ -435,41 +455,22 @@
       c.fillStyle = "rgba(235,240,235," + (Math.random() * .035) + ")";
       c.beginPath(); c.ellipse(m + Math.random() * (W - 2 * m), m + Math.random() * (H - 2 * m), 30 + Math.random() * 120, 6 + Math.random() * 20, Math.random() * 3, 0, 7); c.fill();
     }
-    var pol = '"Segoe Print","Bradley Hand","Chalkduster","Comic Sans MS","Marker Felt",cursive';
     c.textBaseline = "middle"; c.fillStyle = "rgba(255,243,200,.95)";
-    c.font = "bold 78px " + pol; c.textAlign = "center";
+    c.font = "bold " + (cols === 1 ? 62 : 78) + "px " + pol; c.textAlign = "center";
     c.fillText("✦ Les défis de l’Avent ✦", W / 2, 110);
     c.strokeStyle = "rgba(255,243,200,.6)"; c.lineWidth = 3; c.beginPath(); c.moveTo(W * .2, 158); c.quadraticCurveTo(W / 2, 170, W * .8, 156); c.stroke();
-    var colW = (W - 2 * m - 90) / 2, y0 = 200, yMax = H - 95, tw0 = colW - 80;
-    function lignes(t, f) {
-      c.font = f + "px " + pol; var mots = t.split(" "), L = [], cur = "";
-      mots.forEach(function (w) { var essai = cur ? cur + " " + w : w; if (c.measureText(essai).width > tw0 && cur) { L.push(cur); cur = w; } else cur = essai; });
-      if (cur) L.push(cur); return L;
-    }
-    function texteDe(n) { var j = CAL.jours[n]; return (j && j.texte ? j.texte : "").replace(/\s+/g, " "); }
-    function ouvert(n) { return boutons[n] && boutons[n].classList.contains("ouverte"); }
-    var f = 34, ok = false;
-    while (!ok && f > 12) {
-      ok = true;
-      for (var col = 0; col < 2 && ok; col++) {
-        var h = 0;
-        for (var k = 1; k <= 12; k++) { var n = col * 12 + k; h += ouvert(n) ? lignes(texteDe(n), f).length * f * 1.18 + f * .4 : f * 1.5; }
-        if (h > yMax - y0) ok = false;
-      }
-      if (!ok) f--;
-    }
     c.textAlign = "left";
-    for (var col = 0; col < 2; col++) {
+    for (var col = 0; col < cols; col++) {
       var y = y0, x = m + 45 + col * colW;
-      for (var k = 1; k <= 12; k++) {
-        var n = col * 12 + k;
+      for (var k = 1; k <= par; k++) {
+        var n = col * par + k;
         c.save(); c.translate(x, y); c.rotate((((n * 37) % 7) - 3) * .003);
         if (ouvert(n)) {
           var L = lignes(texteDe(n), f);
           c.font = "bold " + f + "px " + pol; c.fillStyle = "rgba(255,226,140,.98)"; c.fillText(n + ".", 0, f * .6);
           c.font = f + "px " + pol; c.fillStyle = "rgba(255,243,210,.95)";
           L.forEach(function (l, i) { c.fillText(l, 62, f * .6 + i * f * 1.18); });
-          y += L.length * f * 1.18 + f * .4;
+          y += L.length * f * 1.18 + f * .45;
         } else {
           c.fillStyle = "rgba(255,243,200,.22)"; c.font = f + "px " + pol; c.fillText(n + ".", 0, f * .6);
           c.fillRect(62, f * .6 + 4, 150 + ((n * 53) % 90), 2); y += f * 1.5;
@@ -479,14 +480,19 @@
     }
     c.fillStyle = "rgba(255,243,200,.5)"; c.font = "26px " + pol; c.textAlign = "center";
     c.fillText("Une case de plus chaque jour…", W / 2, H - 45);
-    if (window.VUE && VUE.tableau) VUE.tableau(tabC);
+    if (cv === tabC && window.VUE && VUE.tableau) VUE.tableau(tabC);
   }
-  window.dessinerTableau = dessinerTableau;
+  window.dessinerTableau = function () { dessinerTableau(); };
   var grand = document.createElement("div"); grand.id = "tableau-grand"; grand.hidden = true;
-  grand.innerHTML = '<canvas width="1800" height="1385"></canvas>'; document.body.appendChild(grand);
+  grand.innerHTML = '<button type="button" class="tg-x" aria-label="Fermer">✕</button><canvas width="1800" height="1385"></canvas>'; document.body.appendChild(grand);
   grand.addEventListener("click", function () { grand.hidden = true; });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") grand.hidden = true; });
-  window.OUVRIR_TABLEAU = function () { dessinerTableau(); grand.querySelector("canvas").getContext("2d").drawImage(tabC, 0, 0); grand.hidden = false; };
+  window.OUVRIR_TABLEAU = function () {
+    var cv = grand.querySelector("canvas"), vertical = window.innerHeight > window.innerWidth * 0.9 || window.innerWidth < 700;
+    cv.width = 1800; cv.height = 1385;
+    dessinerTableau(cv, vertical ? 1 : 2);
+    grand.classList.toggle("vertical", vertical); grand.scrollTop = 0; grand.hidden = false;
+  };
   setTimeout(dessinerTableau, 300); setTimeout(dessinerTableau, 1500);
   var nLutins = 0, tLutin = 0, ouvertA = {};
   var sansAnim = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
