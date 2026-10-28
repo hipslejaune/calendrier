@@ -53,6 +53,10 @@ window.CALENDRIER = {
     1: {
       titre: "Premier jour !",
       texte: "Bienvenue dans le calendrier de l'Avent 2026.\n\n(Texte du jour 1 à remplacer.)"
+    },
+    2: {
+      titre: "Titre 1",
+      texte: "Texte 1"
     }
   }
 };
