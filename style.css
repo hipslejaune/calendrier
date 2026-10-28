@@ -121,17 +121,25 @@ body.glisse #vue{cursor:grabbing}
   100%{opacity:0;transform:translate(2.2cqw,-9cqw) scale(2.6)}
 }
 
-/* Lutins : petites ombres qui trottent d'une porte ouverte à une autre */
+/* Lutins en couleur : ils marchent dans la maison et ne se voient que dans les fenêtres ouvertes */
 #lutins{position:absolute;inset:0;pointer-events:none;z-index:5}
-.lutin{position:absolute;left:0;top:0;opacity:0;transform-origin:50% 100%;will-change:transform,opacity}
-.lutin-in{width:100%;height:100%;animation:trot .42s ease-in-out infinite alternate}
-.lutin svg{display:block;width:100%;height:100%;overflow:visible;fill:#140b05;opacity:.66;filter:blur(.12cqw)}
-.lutin .jb1{transform-origin:16px 46px;animation:balance .42s ease-in-out infinite alternate}
-.lutin .jb2{transform-origin:24px 46px;animation:balance .42s ease-in-out infinite alternate-reverse}
-.lutin .br1{transform-origin:14px 31px;animation:balance .42s ease-in-out infinite alternate-reverse}
-.lutin .br2{transform-origin:26px 31px;animation:balance .42s ease-in-out infinite alternate}
-@keyframes balance{from{transform:rotate(-24deg)}to{transform:rotate(24deg)}}
-@keyframes trot{from{transform:translateY(0)}to{transform:translateY(-.55cqw)}}
+.lutin{position:absolute;left:0;top:0;transform-origin:50% 100%;will-change:transform}
+.lutin-in{width:100%;height:100%;animation:trot .46s ease-in-out infinite alternate}
+.lutin svg{display:block;width:100%;height:100%;overflow:visible;filter:brightness(.86) saturate(.95) drop-shadow(0 0 .3cqw rgba(255,190,90,.45))}
+.lutin .jb1{transform-origin:16px 47px;animation:balance .46s ease-in-out infinite alternate}
+.lutin .jb2{transform-origin:23px 47px;animation:balance .46s ease-in-out infinite alternate-reverse}
+.lutin .br1{transform-origin:14px 31px;animation:balance .46s ease-in-out infinite alternate-reverse}
+.lutin .br2{transform-origin:26px 31px;animation:balance .46s ease-in-out infinite alternate}
+.lutin .marteau{transform-origin:27px 32px}.lutin .pinceau{transform-origin:27px 32px}.lutin .noeud{transform-origin:27px 32px}
+.lutin.travaille .lutin-in{animation:none}
+.lutin.travaille .jb1,.lutin.travaille .jb2,.lutin.travaille .br1,.lutin.travaille .br2{animation:none}
+.lutin.travaille .marteau{animation:marteau .38s ease-in infinite}
+.lutin.travaille .pinceau{animation:pinceau .55s ease-in-out infinite alternate}
+.lutin.travaille .noeud{animation:pinceau .3s ease-in-out infinite alternate}
+@keyframes balance{from{transform:rotate(-22deg)}to{transform:rotate(22deg)}}
+@keyframes trot{from{transform:translateY(0)}to{transform:translateY(-.5cqw)}}
+@keyframes marteau{0%{transform:rotate(-38deg)}55%{transform:rotate(14deg)}100%{transform:rotate(-38deg)}}
+@keyframes pinceau{from{transform:rotate(-14deg)}to{transform:rotate(12deg)}}
 
 #son{
   position:fixed;right:max(.8rem,env(safe-area-inset-right));bottom:max(.8rem,env(safe-area-inset-bottom));z-index:20;

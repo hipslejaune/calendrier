@@ -191,7 +191,7 @@
     }
   }, { passive: true });
   function finGlisse() {
-    if (glisse && glisse.actif && gyro.actif) { gyro.ref = null; dec.yaw = V.cYaw; dec.pitch = V.cPitch; }
+    if (glisse && glisse.actif && gyro.actif) { gyro.ref = null; gyro.cum = undefined; gyro.prev = undefined; dec.yaw = V.cYaw; dec.pitch = V.cPitch; }
     glisse = null; document.body.classList.remove("glisse");
   }
   window.addEventListener("pointerup", finGlisse, { passive: true });
@@ -218,8 +218,10 @@
     var yaw = Math.atan2(X, Y), pit = Math.asin(Math.max(-1, Math.min(1, Z)));
     if (!gyro.actif) { gyro.actif = true; document.getElementById("pano").classList.add("actif"); }
     if (gyro.ref == null) { gyro.ref = yaw; gyro.refP = pit; gyro.base = { yaw: dec.yaw || D.vue.yaw, pitch: dec.pitch || D.vue.pitch }; }
-    var dy = yaw - gyro.ref; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-    V.cYaw = gyro.base.yaw + dy; V.cPitch = gyro.base.pitch + (pit - gyro.refP); borne();
+    if (gyro.cum === undefined || gyro.prev === undefined) { gyro.cum = 0; gyro.prev = yaw; }
+    var dd = yaw - gyro.prev; dd = Math.atan2(Math.sin(dd), Math.cos(dd));   // pas de saut à ±180° : on cumule les petits écarts
+    gyro.cum += dd; gyro.prev = yaw;
+    V.cYaw = gyro.base.yaw + gyro.cum; V.cPitch = gyro.base.pitch + (pit - gyro.refP); borne();
   }
   function activerGyro(geste) {
     window.addEventListener("deviceorientation", surOrientation);           // Android : pas de permission
@@ -234,7 +236,7 @@
   }
   var bouton = document.getElementById("pano");
   bouton.addEventListener("click", function () {
-    if (gyro.actif) { gyro.ref = null; dec.yaw = D.vue.yaw; dec.pitch = D.vue.pitch; msg("Vue recentrée sur le chalet"); }
+    if (gyro.actif) { gyro.ref = null; gyro.cum = undefined; gyro.prev = undefined; dec.yaw = D.vue.yaw; dec.pitch = D.vue.pitch; msg("Vue recentrée sur le chalet"); }
     else activerGyro("bouton");
   });
   if (tactile) document.addEventListener("click", function () { activerGyro(true); });

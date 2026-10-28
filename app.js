@@ -250,26 +250,80 @@
   lutins.id = "lutins";
   document.getElementById("chalet").appendChild(lutins);
 
-  var JAMBES = '<g class="jb1"><path d="M13 45h6l-1 14 3 2.5q1 1.5-1 2h-8q-1.5 0-1-1.5L12 59z"/></g>' +
-               '<g class="jb2"><path d="M21 45h6l1 14 3 2.5q1 1.5-1 2h-8q-2 0-1-1.5L24 59z"/></g>';
-  var BRAS = '<g class="br1"><path d="M14 30l-8 11 3 2.5 8-8z"/></g><g class="br2"><path d="M26 30l8 11-3 2.5-8-8z"/></g>';
-  var TETE = '<path d="M12 31q8-3 16 0l3 16H9z"/><circle cx="20" cy="24" r="6"/><path d="M14 22l-6-3 5 7zM26 22l6-3-5 7z"/>';
-  var VARIANTES = [
-    // 1. bonnet pointu à pompon
-    '<path d="M11 21q1-9 7-14t14-4q-6 3-6 7 0 4 4 11z"/><circle cx="32" cy="3" r="2.6"/>',
-    // 2. bonnet recourbé avec grelot
-    '<path d="M11 21q0-9 6-12t13 1q3 1 4 4-2-2-6-2-5 0-6 4l4 9z"/><circle cx="34" cy="15" r="2.6"/>',
-    // 3. bonnet rond, pompon et écharpe au vent
-    '<path d="M12 22q0-11 8-11t8 11z"/><circle cx="20" cy="9" r="3.2"/><path d="M14 29q-9 0-12 6 7-3 13 0z"/><path d="M14 29l-3 10 4 1 2-9z"/>',
-    // 4. grand bonnet droit et sac sur le dos
-    '<path d="M14 21l6-19 6 19z"/><circle cx="8" cy="38" r="8"/><path d="M12 31l4-1-2 8z"/>',
-    // 5. chapeau mou et cadeau dans les bras
-    '<path d="M9 21q11-3 22 0l-3-8q-3-9-9-9t-7 9z"/><circle cx="26" cy="5" r="2.4"/><rect x="22" y="37" width="12" height="11" rx="1"/><path d="M27 33h2v4h-2zM24 34l3 3 3-3-3-2z"/>',
-    // 6. bonnet pointu et canne à sucre
-    '<path d="M12 21q0-10 8-19 8 9 8 19z"/><path d="M33 33h3.2v21q0 7-7 7v-3q3.8 0 3.8-4z"/>'
+  /* Lutins en couleur, proportions humaines (SVG peint à plat avec ombrages). Vus de profil/trois-quarts, tournés vers la droite
+     (retournés pour aller vers la gauche). Variantes : 4 qui portent des cadeaux, 3 qui fabriquent. */
+  var PEAU = "#e3b38c", PEAU_O = "#c98f69", BOTTE = "#3a2315", CEINT = "#2b1a10", OR = "#e2b94b";
+  var TENUES = [
+    { t: "#2f6b3a", to: "#1f4a28", c: "#a8272f", p: "#4a3b2c" },        // vert / bonnet rouge
+    { t: "#a8272f", to: "#7a1b21", c: "#2f6b3a", p: "#3d3a45" },        // rouge / bonnet vert
+    { t: "#2c5a8f", to: "#1d3f66", c: "#c9a23a", p: "#3a3328" },        // bleu / bonnet or
+    { t: "#7a4a8f", to: "#583468", c: "#e7e1d2", p: "#37323f" },        // prune / bonnet crème
+    { t: "#b5651d", to: "#8a4b13", c: "#2f6b3a", p: "#403324" },        // roux / bonnet vert
+    { t: "#2e7d7a", to: "#205754", c: "#a8272f", p: "#33383a" }         // sarcelle / bonnet rouge
   ];
-  function svgLutin(v) {
-    return '<svg viewBox="0 0 40 64" aria-hidden="true">' + JAMBES + BRAS + TETE + VARIANTES[v % VARIANTES.length] + "</svg>";
+  function corps(T, avecBras) {
+    return '<g class="jb2"><path d="M20.5 47h5.5l-.8 12 2.8 2.4q1 1.7-1 2.2h-6.6q-1.4 0-1-1.6l.8-2.6z" fill="' + T.p + '"/><path d="M19.8 61.2h8.6l1.2 3.4h-10.4z" fill="' + BOTTE + '"/></g>' +
+      '<g class="jb1"><path d="M13.5 47h5.8l.5 12-1.2 2.4q.4 1.9-1.2 2.4h-6.4q-1.7-.4-.8-2l3.4-1.6z" fill="' + T.p + '"/><path d="M11.4 61.6h8.8l.6 3h-10.4z" fill="' + BOTTE + '"/></g>' +
+      '<path d="M12.5 30.5q7.5-3.2 15 0l2.2 18.5h-19.4z" fill="' + T.t + '"/><path d="M22 31q5 .5 5.5 1.5l2.2 16.5h-6z" fill="' + T.to + '" opacity=".55"/>' +
+      '<rect x="10.3" y="42.6" width="19.4" height="3" fill="' + CEINT + '"/><rect x="18" y="42.2" width="4.2" height="3.8" rx=".6" fill="' + OR + '"/>' +
+      '<path d="M10.3 49h19.4l1.6 4.4h-22.6z" fill="' + T.to + '"/>' +
+      '<rect x="18" y="27" width="4.4" height="4.6" fill="' + PEAU_O + '"/>' +
+      '<ellipse cx="20.2" cy="22.6" rx="5.6" ry="6.4" fill="' + PEAU + '"/><path d="M24.6 20.5q1.6 3.2-.6 7.2q3-1 3-5z" fill="' + PEAU_O + '" opacity=".5"/>' +
+      '<path d="M14.8 22.5l-4.4-3.2 1.2 5.2zM25.6 22.5l4.4-3.2-1.2 5.2z" fill="' + PEAU + '"/>' +
+      '<circle cx="17.8" cy="22.6" r=".75" fill="#2a1a10"/><circle cx="22.6" cy="22.6" r=".75" fill="#2a1a10"/>' +
+      '<circle cx="16.8" cy="25" r="1.3" fill="#d9776a" opacity=".35"/><circle cx="23.6" cy="25" r="1.3" fill="#d9776a" opacity=".35"/>' +
+      '<path d="M18.2 26.2q2 1.2 4 0" stroke="#8a4a3a" stroke-width=".6" fill="none"/>' +
+      '<path d="M14 19q.5-9.5 7.5-17.5q3.6 8 4.6 17.5q-6 1.8-12.100 0z" fill="' + T.c + '"/>' +
+      '<path d="M21.5 1.5q3.6 8 4.6 17.500q-2.300.5-3.600.5q.600-9-1-18z" fill="#000" opacity=".16"/>' +
+      '<path d="M13.200 19.200q7.300 2.400 14.200 0l.5 2.400q-7.500 2.400-15.200 0z" fill="#f2ece2"/>' +
+      '<circle cx="21.600" cy="1.700" r="2.200" fill="#f2ece2"/>' +
+      (avecBras ? '<g class="br1"><path d="M14 31.500q-4.600 1.200-5.800 11.200l3 .8q1.800-6.400 4.200-8.400z" fill="' + T.t + '"/><circle cx="9.700" cy="43.800" r="1.800" fill="' + PEAU + '"/></g>' +
+                  '<g class="br2"><path d="M26 31.500q4.600 1.200 5.800 11.200l-3 .8q-1.800-6.400-4.200-8.400z" fill="' + T.t + '"/><circle cx="30.300" cy="43.800" r="1.800" fill="' + PEAU + '"/></g>' : "");
+  }
+  function bras(T, d) { return '<path d="' + d + '" fill="' + T.t + '"/>'; }
+  function main(x, y) { return '<circle cx="' + x + '" cy="' + y + '" r="1.900" fill="' + PEAU + '"/>'; }
+  function cadeau(x, y, w, h, papier, ruban) {
+    return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx=".8" fill="' + papier + '"/>' +
+      '<rect x="' + (x + w / 2 - 1) + '" y="' + y + '" width="2" height="' + h + '" fill="' + ruban + '"/>' +
+      '<rect x="' + x + '" y="' + (y + h / 2 - 1) + '" width="' + w + '" height="2" fill="' + ruban + '"/>' +
+      '<path d="M' + (x + w / 2) + ' ' + y + 'q-3.500-4-4.500-1.200q.800 2.200 4.500 1.200zM' + (x + w / 2) + ' ' + y + 'q3.500-4 4.500-1.200q-.800 2.200-4.500 1.200z" fill="' + ruban + '"/>';
+  }
+  // 0..3 : portent  |  4..6 : fabriquent (restent un moment au milieu de la fenêtre)
+  var MODELES = [
+    function (T) {   // un gros cadeau dans les bras
+      return corps(T, false) + cadeau(22, 31, 13, 12, "#c8323b", OR) + bras(T, "M14 31.500q5 1 12 7l-2 2.600q-6-3.600-11-4.500z") + main(26.500, 41) +
+             bras(T, "M26 31.500q4.500 3 8.500 7.500l-2.500 2q-3.500-3.500-8-5z") + main(33, 40);
+    },
+    function (T) {   // une pile de trois cadeaux
+      return corps(T, false) + cadeau(23, 38, 13, 9, "#2f6b3a", OR) + cadeau(24, 30, 11, 8, "#d8c24a", "#a8272f") + cadeau(25, 23.500, 9, 6.500, "#ececec", "#2c5a8f") +
+             bras(T, "M14 31.500q6 2 11 11l-2.500 2q-5-7-9.500-9z") + main(25, 45);
+    },
+    function (T) {   // un sac de jouets sur l'épaule
+      return '<path d="M3 24q-2 12 3 20q7 3 11-3q2-9-2-16q-6-3-12-1z" fill="#8a6a45"/><path d="M3 24q5-3 12 1q1 .5 2 2q-6-3-14-3z" fill="#6c5033"/><path d="M6 20l-2.500-3.500M11 20l1-4" stroke="#8a6a45" stroke-width="1.800"/>' +
+             corps(T, false) + bras(T, "M14 31.500q-4 3-3.500 8l3 .5q0-3.500 3-5.500z") + main(11, 40.500) +
+             bras(T, "M26 31.500q4 4 2 12l-3-.5q.500-5-2.500-8z") + main(27.500, 44);
+    },
+    function (T) {   // un petit cadeau qu'il tient devant lui, qui marche en le balançant
+      return corps(T, true) + cadeau(27.500, 40.500, 8, 7, "#7a4a8f", OR);
+    },
+    function (T) {   // marteau : il fabrique un cheval en bois
+      return corps(T, false) + '<rect x="24" y="38" width="10" height="7" rx="1.500" fill="#b07a45"/><rect x="31.500" y="33.500" width="2.500" height="6" fill="#b07a45"/><rect x="25" y="44.500" width="1.600" height="4" fill="#8a5a30"/><rect x="31.500" y="44.500" width="1.600" height="4" fill="#8a5a30"/>' +
+             bras(T, "M14 31.500q-3 5-1 11l3-.5q-1-4 .5-8z") + main(14.500, 42) +
+             '<g class="marteau"><path d="M26 31.500q5 1 7 6l-2.500 1.500q-1.500-3.500-5-4.500z" fill="' + T.t + '"/>' + main(32.500, 38) + '<rect x="32" y="26" width="1.800" height="12" fill="#7a5530"/><rect x="29.500" y="24.500" width="7" height="4.200" rx=".8" fill="#6b6f76"/></g>';
+    },
+    function (T) {   // il emballe un cadeau et noue le ruban
+      return corps(T, false) + cadeau(20, 38, 14, 10, "#2c5a8f", "#e2b94b") + bras(T, "M14 31.500q6 3 9 8l-2.500 1.500q-3-4.500-8-6z") + main(22.500, 40) +
+             '<g class="noeud">' + bras(T, "M26 31.500q5 3 6 8l-3 1q-1-4-4-6z") + main(31, 40.500) + '</g>';
+    },
+    function (T) {   // il peint un petit ours
+      return corps(T, false) + '<circle cx="29" cy="43" r="4.500" fill="#a9703a"/><circle cx="25.500" cy="38.500" r="1.800" fill="#a9703a"/><circle cx="32.500" cy="38.500" r="1.800" fill="#a9703a"/><circle cx="29" cy="40" r="1.600" fill="#e8d3a8"/>' +
+             bras(T, "M14 31.500q5 3 8 8l-2.500 1.500q-3-4.500-7.500-6z") + main(21.500, 41) +
+             '<g class="pinceau"><path d="M26 31.500q5 1 8 6l-2.500 1.500q-2-3.500-6-4.500z" fill="' + T.t + '"/>' + main(33, 37.500) + '<rect x="33.200" y="26" width="1.300" height="11" fill="#7a5530" transform="rotate(14 33.800 37)"/><rect x="34.800" y="24" width="2" height="3" fill="#c8323b" transform="rotate(14 33.800 37)"/></g>';
+    }
+  ];
+  var NB_PORTE = 4;
+  function svgLutin(v, T) {
+    return '<svg viewBox="0 0 40 66" aria-hidden="true">' + MODELES[v % MODELES.length](T) + "</svg>";
   }
 
   var nLutins = 0, tLutin = 0, ouvertA = {};
@@ -310,31 +364,47 @@
     do { b = ouv[Math.floor(Math.random() * ouv.length)]; } while (b === a);
     var W = lutins.offsetWidth, H = lutins.offsetHeight; if (!W || !H) return;
     var ba = CH.boxes[a], bb = CH.boxes[b];
-    function sol(bx) { return (bx[1] + bx[3] * 0.9) * H; }           // le sol de la fenêtre (en px)
+    function sol(bx) { return (bx[1] + bx[3] * 0.92) * H; }          // le sol de la fenêtre (en px)
     var xa = (ba[0] + ba[2] / 2) * W, xb = (bb[0] + bb[2] / 2) * W, fa = sol(ba), fb = sol(bb);
     var dir = xb >= xa ? 1 : -1;
-    var xe = dir > 0 ? (ba[0] + ba[2]) * W : ba[0] * W;                // il sort de sa fenêtre côté destination
-    var xn = dir > 0 ? bb[0] * W : (bb[0] + bb[2]) * W;                // et entre dans l'autre par le côté proche
-    if ((xn - xe) * dir < 0) xn = xe;
-    var pts = [[xa, fa], [xe, fa], [xn, fb], [xb, fb]], lg = [], tot = 0, i;
+    var hauteur = Math.max(0.07 * W, Math.min(0.14 * W, Math.min(ba[3], bb[3]) * H * 0.84));
+    var largeur = hauteur * 40 / 66;
+    var v = Math.floor(Math.random() * MODELES.length), travail = v >= NB_PORTE && v < 7;
+    // il entre par le bord de la fenêtre de départ, traverse, et sort par le bord de l'autre (jamais de disparition au milieu)
+    var xs = dir > 0 ? ba[0] * W - largeur : (ba[0] + ba[2]) * W + largeur;
+    var xe = dir > 0 ? (bb[0] + bb[2]) * W + largeur : bb[0] * W - largeur;
+    var xs2 = dir > 0 ? (ba[0] + ba[2]) * W : ba[0] * W, xn = dir > 0 ? bb[0] * W : (bb[0] + bb[2]) * W;
+    var pts = [[xs, fa]];
+    if (travail) pts.push([xa, fa], [xa, fa]);                      // il s'arrête au milieu de sa fenêtre pour travailler
+    pts.push([xs2, fa], [xn, fb], [xe, fb]);
+    var lg = [], tot = 0, i;
     for (i = 1; i < pts.length; i++) { var l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); lg.push(l); tot += l; }
     if (tot < 8) return;
-    var hauteur = Math.max(0.06 * W, Math.min(0.13 * W, Math.min(ba[3], bb[3]) * H * 0.78));
-    var largeur = hauteur * 0.625;
-    var duree = Math.max(2400, Math.min(11000, tot / (W * 0.11) * 1000));
+    var vitesse = W * 0.1, pause = travail ? 5200 : 0;
+    var marche = tot / vitesse * 1000, duree = marche + pause;
+    var T = TENUES[Math.floor(Math.random() * TENUES.length)];
     var el = document.createElement("div");
-    el.className = "lutin";
+    el.className = "lutin" + (v === 3 ? "" : v < NB_PORTE ? " porte-cadeau" : "");
     el.style.cssText = "width:" + largeur.toFixed(1) + "px;height:" + hauteur.toFixed(1) + "px;margin-left:" + (-largeur / 2).toFixed(1) +
                        "px;margin-top:" + (-hauteur).toFixed(1) + "px";
-    el.innerHTML = '<div class="lutin-in">' + svgLutin(Math.floor(Math.random() * VARIANTES.length)) + "</div>";
+    el.innerHTML = '<div class="lutin-in">' + svgLutin(v, T) + "</div>";
     if (dir < 0) el.querySelector("svg").style.transform = "scaleX(-1)";
     lutins.appendChild(el); nLutins++;
-    var kf = [], cum = 0;
-    function pos(p, off, o) { return { transform: "translate(" + p[0].toFixed(1) + "px," + p[1].toFixed(1) + "px)", opacity: o, offset: off }; }
-    kf.push(pos(pts[0], 0, 0)); kf.push(pos(pts[0], 0.02, 1));
-    for (i = 1; i < pts.length; i++) { cum += lg[i - 1]; kf.push(pos(pts[i], Math.min(0.98, cum / tot), 1)); }
-    kf[kf.length - 1].offset = 0.98; kf.push(pos(pts[3], 1, 0));
+    var kf = [], cum = 0, tPause0 = 0, tPause1 = 0;
+    function pos(p, off) { return { transform: "translate(" + p[0].toFixed(1) + "px," + p[1].toFixed(1) + "px)", offset: Math.min(1, off) }; }
+    kf.push(pos(pts[0], 0));
+    for (i = 1; i < pts.length; i++) {
+      var dm = lg[i - 1] / vitesse * 1000;
+      if (travail && i === 3) { tPause0 = cum; cum += pause; tPause1 = cum; kf.push(pos(pts[i], cum / duree)); continue; }
+      cum += dm; kf.push(pos(pts[i], cum / duree));
+    }
+    kf[kf.length - 1].offset = 1;
     var anim = el.animate(kf, { duration: duree, easing: "linear", fill: "forwards" });
+    if (travail) {
+      var inner = el.querySelector(".lutin-in");
+      setTimeout(function () { el.classList.add("travaille"); }, tPause0);
+      setTimeout(function () { el.classList.remove("travaille"); }, tPause1);
+    }
     anim.onfinish = function () { el.remove(); nLutins--; };
   }
   function planifierLutin() {
