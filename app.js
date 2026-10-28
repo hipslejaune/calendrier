@@ -487,8 +487,8 @@
   grand.innerHTML = '<canvas width="1800" height="1385"></canvas>'; document.body.appendChild(grand);
   var fermerTg = document.createElement("button"); fermerTg.type = "button"; fermerTg.id = "tg-fermer"; fermerTg.hidden = true;
   fermerTg.innerHTML = "✕ Fermer"; document.body.appendChild(fermerTg);
-  function fermerTableau(e) { if (e) { e.stopPropagation(); e.preventDefault(); } grand.hidden = true; fermerTg.hidden = true; }
-  fermerTg.addEventListener("click", fermerTableau); fermerTg.addEventListener("pointerup", fermerTableau); fermerTg.addEventListener("touchend", fermerTableau);
+  function fermerTableau() { grand.hidden = true; fermerTg.hidden = true; }
+  fermerTg.addEventListener("click", fermerTableau);
   grand.addEventListener("click", fermerTableau);
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") fermerTableau(); });
   window.OUVRIR_TABLEAU = function () {
