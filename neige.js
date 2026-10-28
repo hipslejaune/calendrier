@@ -6,8 +6,8 @@
   var reduit = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   var W = 0, H = 0, dpr = 1, flocons = [], sprites = [];
-  var RAYON = 130;                 // zone d'influence du curseur / doigt (px)
-  var ptr = { x: -9999, y: -9999, actif: false };
+  var RAYON = 200;                 // zone d'influence du curseur / doigt (px)
+  var ptr = { x: -9999, y: -9999, actif: false, vx: 0, vy: 0, t: 0 };
 
   // Sprites pré-dessinés (halo doux) : plus rapide que 700 gradients par image.
   function fabriqueSprites() {
@@ -59,11 +59,17 @@
   }
 
   function pointeur(e) {
-    ptr.x = e.clientX; ptr.y = e.clientY; ptr.actif = true;
+    var t = e.timeStamp || performance.now();
+    if (ptr.actif && ptr.t && t > ptr.t) {            // vitesse du curseur : il « souffle » les flocons
+      var d = Math.max(8, t - ptr.t) / 1000;
+      ptr.vx = ptr.vx * 0.5 + ((e.clientX - ptr.x) / d) * 0.5;
+      ptr.vy = ptr.vy * 0.5 + ((e.clientY - ptr.y) / d) * 0.5;
+    }
+    ptr.t = t; ptr.x = e.clientX; ptr.y = e.clientY; ptr.actif = true;
   }
   window.addEventListener("pointermove", pointeur, { passive: true });
   window.addEventListener("pointerdown", pointeur, { passive: true });
-  function fin() { ptr.actif = false; ptr.x = ptr.y = -9999; }
+  function fin() { ptr.actif = false; ptr.x = ptr.y = -9999; ptr.vx = ptr.vy = 0; ptr.t = 0; }
   window.addEventListener("pointerup", function (e) { if (e.pointerType !== "mouse") fin(); }, { passive: true });
   window.addEventListener("pointercancel", fin, { passive: true });
   document.addEventListener("mouseleave", fin);
@@ -76,7 +82,9 @@
     var t = (now - t0) / 1000;
     ctx.clearRect(0, 0, W, H);
 
-    var amort = Math.exp(-2.4 * dt);
+    var amort = Math.exp(-1.5 * dt);
+    var vd = Math.exp(-6 * dt); ptr.vx *= vd; ptr.vy *= vd;
+    var vmax = 1400, vxp = Math.max(-vmax, Math.min(vmax, ptr.vx)), vyp = Math.max(-vmax, Math.min(vmax, ptr.vy));
     for (var i = 0; i < flocons.length; i++) {
       var f = flocons[i];
 
@@ -87,9 +95,9 @@
           if (d2 < RAYON * RAYON) {
             var d = Math.sqrt(d2) || 0.001;
             var k = 1 - d / RAYON;
-            var force = k * k * 1500 * dt;        // plus c'est près, plus ça pousse
-            f.ox += (ex / d) * force;
-            f.oy += (ey / d) * force;
+            var force = k * k * 6500 * dt;        // plus c'est près, plus ça repousse
+            f.ox += (ex / d) * force + vxp * k * 7 * dt;   // + entraînement dans le sens du geste
+            f.oy += (ey / d) * force + vyp * k * 7 * dt;
           }
         }
       }
