@@ -30,6 +30,7 @@
   function ecrire(cle, val) { try { localStorage.setItem(cle, JSON.stringify(val)); } catch (e) {} }
   var ouvertes = lire(cleOuvertes, []);
   if (!Array.isArray(ouvertes)) ouvertes = [];
+  ouvertes = ouvertes.filter(function (n) { return n <= AUJ; });
   var muet = lire(cleSon, false) === true;
 
   /* ---------- Hasard reproductible ---------- */

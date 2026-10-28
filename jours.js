@@ -4,7 +4,7 @@ window.CALENDRIER = {
 
   // MODE TEST : true = toutes les cases s'ouvrent, comme si on était le 24 décembre.
   // À remettre à false avant d'envoyer le lien aux invitées.
-  debloquerTout: true,
+  debloquerTout: false,
 
   // Décors 360° : un par jour (clé = numéro du jour où il apparaît). Image équirectangulaire 2:1 dans img/.
   // Ajouter le numéro du jour dans "fonds" dès que son décor est configuré ci-dessous.

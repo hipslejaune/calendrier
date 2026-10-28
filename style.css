@@ -250,3 +250,5 @@ body.glisse #vue{cursor:grabbing}
 #tableau-grand{touch-action:pan-y}
 #tg-fermer{position:fixed;z-index:45;right:max(.8rem,env(safe-area-inset-right));top:max(.8rem,env(safe-area-inset-top));padding:.7rem 1.1rem;min-height:2.8rem;border-radius:2rem;border:1px solid rgba(255,243,200,.6);background:rgba(20,28,25,.92);color:#ffe9a8;font:600 1rem Georgia,serif;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 #tg-fermer[hidden]{display:none}
+
+#actions{display:none!important}
