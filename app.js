@@ -40,6 +40,7 @@
     var st = document.getElementById("stage").style;
     st.setProperty("--img-d", 'url("img/jour-' + nn + '-desktop.webp")');
     st.setProperty("--img-m", 'url("img/jour-' + nn + '-mobile.webp")');
+    window.FOND_ACTIF = { n: n, desktop: "img/jour-" + nn + "-desktop.webp", mobile: "img/jour-" + nn + "-mobile.webp" };
   })();
 
   /* ---------- Hasard reproductible ---------- */
