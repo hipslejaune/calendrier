@@ -44,7 +44,7 @@ window.CALENDRIER = {
   // Musique : une seule pour l'instant (elle tourne en boucle). Pour en remettre plusieurs : déposer les .mp3
   // dans audio/ et les lister ici ; une sera alors tirée au hasard chaque jour, jamais la même deux jours de suite.
   musiques: [
-    "audio/pizzicato-du-festival-dhiver.mp3"
+    "audio/musique-noel-2.mp3"
   ],
 
   // Contenu derrière chaque fenêtre (clé = numéro du jour).

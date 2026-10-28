@@ -58,7 +58,8 @@
   /* Décors vus par les fenêtres (img/fenetres/fNN.webp, largeur/hauteur ci-dessous) : on attribue à chaque fenêtre celui dont les proportions
      lui vont le mieux, en répartissant pour limiter les doublons. */
   var DECORS_FEN = [[1, 1.29], [2, 1.16], [3, .66], [4, 2.11], [5, .61], [6, 1.46], [7, 1.37], [8, 1.27], [9, .61], [10, .47], [11, .85], [12, .94], [13, 1.35], [14, .58], [15, .91]];
-  var decorDe = {};
+  var AVEC_BARREAUX = [1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 14];       // images qui ont déjà leurs croisillons : on n'en rajoute pas
+  var decorDe = {}, decorNum = {};
   (function () {
     var emploi = DECORS_FEN.map(function () { return 0; });
     for (var n = 1; n <= 24; n++) {
@@ -69,6 +70,7 @@
         if (c < bc) { bc = c; best = i; }
       });
       emploi[best]++;
+      decorNum[n] = DECORS_FEN[best][0];
       decorDe[n] = "img/fenetres/f" + (DECORS_FEN[best][0] < 10 ? "0" : "") + DECORS_FEN[best][0] + ".webp";
     }
   })();
@@ -180,7 +182,7 @@
   var piste = musiqueDuJour(jourRef), musique = null;
   if (piste) {
     musique = new Audio(piste);
-    musique.loop = true; musique.volume = .1; musique.preload = "auto";
+    musique.loop = true; musique.volume = .16; musique.preload = "auto";
   }
   function jouerMusique() {
     if (!musique || muet || document.hidden) return;
@@ -374,6 +376,7 @@
       if (vitres.querySelector('[data-n="' + n + '"]')) return;
       var ix = 0.03, x = b[0] + b[2] * ix, y = b[1] + b[3] * ix, w = b[2] * (1 - 2 * ix), h = b[3] * (1 - 2 * ix);
       var asp = w * RATIO / h, nv = asp > 1.25 ? 2 : 1, nh = asp < 0.75 ? 2 : 1, i, html = "";
+      if (AVEC_BARREAUX.indexOf(decorNum[n]) >= 0) nv = nh = 0;
       for (i = 1; i <= nv; i++) html += '<i class="bv" style="left:' + (i * 100 / (nv + 1)).toFixed(2) + '%"></i>';
       for (i = 1; i <= nh; i++) html += '<i class="bh" style="top:' + (i * 100 / (nh + 1)).toFixed(2) + '%"></i>';
       var vt = document.createElement("div");
