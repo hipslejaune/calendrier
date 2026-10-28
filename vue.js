@@ -162,7 +162,7 @@
     "  if(m<=0.)continue;\n" +
     "  float h=clamp((f.y+f.w-px.y)/(2.*f.w),0.,1.);\n" +
     "  float w=.55*sin(uT*9.+px.y*.34+f.x)+.3*sin(uT*5.3+px.y*.15+f.x*2.)+.35*sin(uT*2.1+f.x*3.);\n" +
-    "  sh.x+=m*f.z*.17*h*w;sh.y+=m*f.w*.05*h*sin(uT*7.+f.x);\n" +
+    "  float kf=f.z>40.?.22:1.;sh.x+=m*f.z*.17*h*w*kf;sh.y+=m*f.w*.05*h*sin(uT*7.+f.x)*kf;\n" +
     "  glow+=m*m*(.16+.08*sin(uT*6.3+f.x)+.05*sin(uT*13.1+f.x*2.));}\n" +
     " vec2 uv=vec2((px.x+sh.x)/uTex.x,(px.y+sh.y)/uTex.y);\n" +
     " vec3 c=textureGrad(uBg,uv,dX,dY).rgb;\n" +
